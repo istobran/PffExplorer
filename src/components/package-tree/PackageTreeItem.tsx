@@ -1,5 +1,7 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
+import { X } from "lucide-react";
+import type { MouseEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 
 export type PackageTreeItemProps = {
@@ -10,22 +12,39 @@ export type PackageTreeItemProps = {
   all?: boolean;
   title?: string;
   onClick: () => void;
+  onClose?: () => void;
 };
 
 export function PackageTreeItem(props: PackageTreeItemProps) {
   const Icon = props.icon;
 
+  function handleClose(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    props.onClose?.();
+  }
+
   return (
-    <button
-      type="button"
+    <div
       className={clsx(packageTreeItemClass, props.all && "all-node", props.active && "active")}
-      onClick={props.onClick}
       title={props.title}
     >
-      <Icon className="pff-icon" size={props.all ? 15 : 14} />
-      <span className="pff-name">{props.label}</span>
-      <span className="pff-count">{props.count}</span>
-    </button>
+      <button type="button" className="pff-main" onClick={props.onClick}>
+        <Icon className="pff-icon" size={props.all ? 15 : 14} />
+        <span className="pff-name">{props.label}</span>
+        <span className="pff-count">{props.count}</span>
+      </button>
+      {props.onClose && (
+        <button
+          type="button"
+          className="pff-close"
+          title={`Close ${props.label}`}
+          aria-label={`Close ${props.label}`}
+          onClick={handleClose}
+        >
+          <X size={12} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -33,14 +52,10 @@ const packageTreeItemClass = css`
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
   height: 30px;
-  padding: 0 10px;
   background: transparent;
   color: var(--green);
-  border: none;
   border-bottom: 1px solid transparent;
-  cursor: pointer;
   transition: background 0.08s, color 0.08s;
   position: relative;
   text-align: left;
@@ -85,6 +100,27 @@ const packageTreeItemClass = css`
     color: var(--green-hi);
   }
 
+  .pff-main {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 0 10px;
+    background: transparent;
+    color: inherit;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    text-align: left;
+  }
+
+  .pff-main:focus-visible,
+  .pff-close:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--green-sel);
+  }
+
   .pff-icon {
     color: var(--green-dim);
     flex-shrink: 0;
@@ -107,5 +143,37 @@ const packageTreeItemClass = css`
     background: #0a1a0a;
     border: 1px solid var(--border);
     padding: 0 4px;
+  }
+
+  .pff-close {
+    width: 24px;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    border-left: 1px solid transparent;
+    cursor: pointer;
+    opacity: 0.45;
+    outline: none;
+    transition: opacity 0.08s, color 0.08s, background 0.08s, border-color 0.08s;
+  }
+
+  &.active .pff-close {
+    opacity: 0.7;
+  }
+
+  &:hover .pff-close,
+  .pff-close:focus-visible {
+    opacity: 1;
+  }
+
+  .pff-close:hover {
+    color: var(--danger);
+    background: rgba(255, 85, 85, 0.1);
+    border-left-color: rgba(255, 85, 85, 0.35);
   }
 `;

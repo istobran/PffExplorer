@@ -21,6 +21,7 @@ import {
   entryKey,
 } from "@/lib/format";
 import type {
+  AppConfig,
   ExportResult,
   PreviewResponse,
   SortKey,
@@ -42,6 +43,12 @@ const EMPTY_SNAPSHOT: WorkspaceSnapshot = {
   warnings: [],
 };
 
+type LoadOpenedPffPathsOptions = {
+  progressTarget: string;
+  readyTarget: string;
+  persist: boolean;
+};
+
 function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(EMPTY_SNAPSHOT);
   const [activeArchivePath, setActiveArchivePath] = useState<string | null>(null);
@@ -60,6 +67,7 @@ function App() {
 
   useEffect(() => {
     void fitWindowToWorkArea();
+    void restoreSavedWorkspace();
   }, []);
 
   const selectedEntry = useMemo(() => {
@@ -135,7 +143,30 @@ function App() {
     const path = singlePath(selected);
     if (!path) return;
 
-    await loadWorkspace("load_pff_project", path);
+    try {
+      const projectPaths = await invoke<string[]>("scan_pff_project", { path });
+      if (projectPaths.length === 0) {
+        await message("No PFF files were found in this project directory.", {
+          title: "Open project",
+          kind: "info",
+        });
+        return;
+      }
+
+      await loadOpenedPffPaths([...openedArchivePaths(), ...projectPaths], {
+        progressTarget: basename(path),
+        readyTarget: "ALL PACKAGES",
+        persist: true,
+      });
+    } catch (error) {
+      setStatus({
+        label: "ERROR",
+        target: basename(path),
+        progressLabel: "IDLE",
+        progress: null,
+      });
+      await message(String(error), { title: "Project scan failed", kind: "error" });
+    }
   }
 
   async function openFile() {
@@ -148,13 +179,54 @@ function App() {
     const path = singlePath(selected);
     if (!path) return;
 
-    await loadWorkspace("load_pff_file", path);
+    await loadOpenedPffPaths([...openedArchivePaths(), path], {
+      progressTarget: basename(path),
+      readyTarget: basename(path),
+      persist: true,
+    });
   }
 
-  async function loadWorkspace(command: "load_pff_file" | "load_pff_project", path: string) {
+  async function restoreSavedWorkspace() {
+    try {
+      const config = await invoke<AppConfig>("load_app_config");
+      const paths = uniquePaths(config.openedPffPaths ?? []);
+      if (paths.length === 0) return;
+
+      await loadOpenedPffPaths(paths, {
+        progressTarget: "SAVED PACKAGES",
+        readyTarget: "SAVED PACKAGES",
+        persist: false,
+      });
+    } catch (error) {
+      console.error("Config restore failed", error);
+      await message(String(error), { title: "Config restore failed", kind: "warning" });
+    }
+  }
+
+  async function loadOpenedPffPaths(paths: string[], options: LoadOpenedPffPathsOptions) {
+    const nextPaths = uniquePaths(paths);
+
+    if (nextPaths.length === 0) {
+      setSnapshot(EMPTY_SNAPSHOT);
+      setActiveArchivePath(null);
+      setSelectedKey(null);
+      setPreview(null);
+      setPreviewLoading(false);
+      if (options.persist) {
+        await persistOpenedPffPaths([]);
+      }
+      setStatus({
+        label: "READY",
+        target: "-",
+        progressLabel: "IDLE",
+        progress: null,
+      });
+      return;
+    }
+
     setStatus({
       label: "SCANNING",
-      target: basename(path),
+      target: options.progressTarget,
       progressLabel: "PFF LOAD",
       progress: 8,
     });
@@ -172,22 +244,30 @@ function App() {
     }, 180);
 
     try {
-      const next = await invoke<WorkspaceSnapshot>(command, { path });
+      const next = await invoke<WorkspaceSnapshot>("load_pff_paths", { paths: nextPaths });
+      const loadedPathSet = new Set(next.archives.map((archive) => archive.path));
+      const loadedEntryKeySet = new Set(next.entries.map((entry) => entryKey(entry)));
+
       setSnapshot(next);
-      setActiveArchivePath(null);
-      setSearchText("");
-      setSelectedKey(null);
+      setActiveArchivePath((current) => (current && loadedPathSet.has(current) ? current : null));
+      setSelectedKey((current) => (current && loadedEntryKeySet.has(current) ? current : null));
       setPreview(null);
+      setPreviewLoading(false);
+
+      if (options.persist) {
+        await persistOpenedPffPaths(next.archives.map((archive) => archive.path));
+      }
+
       setStatus({
         label: next.warnings.length ? "READY WITH WARNINGS" : "READY",
-        target: command === "load_pff_file" ? basename(path) : "ALL PACKAGES",
+        target: options.readyTarget,
         progressLabel: "IDLE",
         progress: null,
       });
     } catch (error) {
       setStatus({
         label: "ERROR",
-        target: basename(path),
+        target: options.progressTarget,
         progressLabel: "IDLE",
         progress: null,
       });
@@ -195,6 +275,34 @@ function App() {
     } finally {
       window.clearInterval(progressTimer);
     }
+  }
+
+  async function persistOpenedPffPaths(paths: string[]) {
+    const config: AppConfig = {
+      openedPffPaths: uniquePaths(paths),
+    };
+
+    try {
+      await invoke("save_app_config", { config });
+    } catch (error) {
+      console.error("Config save failed", error);
+      await message(String(error), { title: "Config save failed", kind: "warning" });
+    }
+  }
+
+  async function closeArchive(path: string) {
+    await loadOpenedPffPaths(
+      openedArchivePaths().filter((archivePath) => archivePath !== path),
+      {
+        progressTarget: basename(path),
+        readyTarget: "ALL PACKAGES",
+        persist: true,
+      },
+    );
+  }
+
+  function openedArchivePaths() {
+    return snapshot.archives.map((archive) => archive.path);
   }
 
   function selectArchive(path: string | null) {
@@ -288,6 +396,7 @@ function App() {
             allCount={snapshot.entries.length}
             activeArchivePath={activeArchivePath}
             onSelect={selectArchive}
+            onCloseArchive={closeArchive}
           />
         </Panel>
 
@@ -362,6 +471,19 @@ async function fitWindowToWorkArea() {
 function singlePath(value: string | string[] | null): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value;
+}
+
+function uniquePaths(paths: string[]) {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const path of paths) {
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    unique.push(path);
+  }
+
+  return unique;
 }
 
 const appShellClass = css`

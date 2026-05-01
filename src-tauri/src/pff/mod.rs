@@ -184,18 +184,22 @@ pub fn load_pff_file(path: String) -> Result<WorkspaceSnapshot, String> {
 
 #[tauri::command]
 pub fn load_pff_project(path: String) -> Result<WorkspaceSnapshot, String> {
-    let mut archives = Vec::new();
-    let mut warnings = Vec::new();
     let paths = collect_project_pffs(Path::new(&path));
+    Ok(open_pff_paths(paths))
+}
 
-    for pff_path in paths {
-        match PffArchive::open(&pff_path) {
-            Ok(archive) => archives.push(archive),
-            Err(err) => warnings.push(format!("{}: {err}", pff_path.display())),
-        }
-    }
+#[tauri::command]
+pub fn load_pff_paths(paths: Vec<String>) -> Result<WorkspaceSnapshot, String> {
+    let paths = paths.into_iter().map(PathBuf::from).collect::<Vec<_>>();
+    Ok(open_pff_paths(paths))
+}
 
-    Ok(snapshot_from_archives(archives, warnings))
+#[tauri::command]
+pub fn scan_pff_project(path: String) -> Result<Vec<String>, String> {
+    Ok(collect_project_pffs(Path::new(&path))
+        .into_iter()
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect())
 }
 
 #[tauri::command]
@@ -264,6 +268,32 @@ fn collect_project_pffs(root: &Path) -> Vec<PathBuf> {
     }
 
     paths
+}
+
+fn open_pff_paths(paths: Vec<PathBuf>) -> WorkspaceSnapshot {
+    let mut archives = Vec::new();
+    let mut warnings = Vec::new();
+
+    for pff_path in dedupe_paths(paths) {
+        match PffArchive::open(&pff_path) {
+            Ok(archive) => archives.push(archive),
+            Err(err) => warnings.push(format!("{}: {err}", pff_path.display())),
+        }
+    }
+
+    snapshot_from_archives(archives, warnings)
+}
+
+fn dedupe_paths(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut unique = Vec::with_capacity(paths.len());
+
+    for path in paths {
+        if !unique.iter().any(|item| item == &path) {
+            unique.push(path);
+        }
+    }
+
+    unique
 }
 
 fn is_pff_file(path: &Path) -> bool {

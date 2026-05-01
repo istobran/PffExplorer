@@ -37,6 +37,10 @@ export type WorkspaceSnapshot = {
   warnings: string[];
 };
 
+export type AppConfig = {
+  openedPffPaths: string[];
+};
+
 export type PreviewResponse = {
   status: "text" | "binary" | "tooLarge";
   text: string | null;
