@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PreviewTextLine } from "@/components/preview/PreviewTextLine";
 
-const TYPEWRITER_CHARS_PER_SECOND = 360;
+const TYPEWRITER_CHARS_PER_SECOND = 200;
+const TYPEWRITER_LINE_STAGGER_MS = 20;
 const FALLBACK_FIRST_SCREEN_CHARS = 900;
 const LINE_NUMBER_GUTTER_WIDTH = 40;
 
@@ -14,9 +15,20 @@ export type PreviewTextBlockProps = {
 export function PreviewTextBlock(props: PreviewTextBlockProps) {
   const blockRef = useRef<HTMLDivElement>(null);
   const [animatedLimit, setAnimatedLimit] = useState(FALLBACK_FIRST_SCREEN_CHARS);
-  const [visibleChars, setVisibleChars] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [animationComplete, setAnimationComplete] = useState(false);
   const totalChars = props.text.length;
   const targetChars = Math.min(totalChars, animatedLimit);
+  const animatedLines = useMemo(() => {
+    return props.text.slice(0, targetChars).split("\n");
+  }, [props.text, targetChars]);
+  const fullLines = useMemo(() => props.text.split("\n"), [props.text]);
+  const animationDurationMs = useMemo(() => {
+    return animatedLines.reduce((duration, line, index) => {
+      const lineDuration = (line.length / TYPEWRITER_CHARS_PER_SECOND) * 1000;
+      return Math.max(duration, index * TYPEWRITER_LINE_STAGGER_MS + lineDuration);
+    }, 0);
+  }, [animatedLines]);
 
   useLayoutEffect(() => {
     const block = blockRef.current;
@@ -43,25 +55,25 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
 
   useEffect(() => {
     if (totalChars === 0 || targetChars === 0 || prefersReducedMotion()) {
-      setVisibleChars(totalChars);
+      setElapsedMs(animationDurationMs);
+      setAnimationComplete(true);
       return;
     }
 
-    setVisibleChars(0);
+    setElapsedMs(0);
+    setAnimationComplete(false);
 
     const startedAt = performance.now();
     let frameId = 0;
 
     function tick(now: number) {
-      const elapsedSeconds = (now - startedAt) / 1000;
-      const nextChars = Math.min(
-        targetChars,
-        Math.floor(elapsedSeconds * TYPEWRITER_CHARS_PER_SECOND),
-      );
-      setVisibleChars(nextChars >= targetChars ? totalChars : nextChars);
+      const nextElapsed = Math.min(now - startedAt, animationDurationMs);
+      setElapsedMs(nextElapsed);
 
-      if (nextChars < targetChars) {
+      if (nextElapsed < animationDurationMs) {
         frameId = window.requestAnimationFrame(tick);
+      } else {
+        setAnimationComplete(true);
       }
     }
 
@@ -70,12 +82,13 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [props.animationKey, targetChars, totalChars]);
+  }, [animationDurationMs, props.animationKey, targetChars, totalChars]);
 
-  const visibleLines = useMemo(() => {
-    return props.text.slice(0, visibleChars).split("\n");
-  }, [props.text, visibleChars]);
-  const cursorLine = visibleChars < targetChars ? visibleLines.length - 1 : -1;
+  const visibleLines = animationComplete
+    ? fullLines
+    : animatedLines.map((line, index) => {
+        return line.slice(0, visibleCharsForLine(line, index, elapsedMs));
+      });
 
   return (
     <div ref={blockRef}>
@@ -85,7 +98,7 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
           line={line}
           lineNumber={index + 1}
           extension={props.extension}
-          cursor={index === cursorLine}
+          cursor={!animationComplete && isLineTyping(animatedLines[index] ?? "", index, elapsedMs)}
         />
       ))}
     </div>
@@ -94,6 +107,23 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function visibleCharsForLine(line: string, lineIndex: number, elapsedMs: number) {
+  const lineElapsed = elapsedMs - lineIndex * TYPEWRITER_LINE_STAGGER_MS;
+  if (lineElapsed <= 0) return 0;
+
+  return Math.min(
+    line.length,
+    Math.floor((lineElapsed / 1000) * TYPEWRITER_CHARS_PER_SECOND),
+  );
+}
+
+function isLineTyping(line: string, lineIndex: number, elapsedMs: number) {
+  if (line.length === 0) return false;
+
+  const visibleChars = visibleCharsForLine(line, lineIndex, elapsedMs);
+  return visibleChars > 0 && visibleChars < line.length;
 }
 
 function measureFirstScreenCharLimit(
