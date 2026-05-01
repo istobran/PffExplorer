@@ -326,15 +326,15 @@ function App() {
   }
 
   async function minimizeWindow() {
-    await getCurrentWindow().minimize();
+    await runWindowAction(() => getCurrentWindow().minimize());
   }
 
   async function toggleMaximizeWindow() {
-    await getCurrentWindow().toggleMaximize();
+    await runWindowAction(() => getCurrentWindow().toggleMaximize());
   }
 
   async function closeWindow() {
-    await getCurrentWindow().close();
+    await runWindowAction(() => getCurrentWindow().close());
   }
 
   return (
@@ -349,10 +349,10 @@ function App() {
           <FileArchive size={14} />
           <span>OPEN FILE</span>
         </button>
-        <div id="nav-center">
+        <div id="nav-center" data-tauri-drag-region>
           <div id="nav-title">PFF RESOURCE EXPLORER</div>
         </div>
-        <div id="logo-area">
+        <div id="logo-area" data-tauri-drag-region>
           <div id="logo-mark">
             <Crosshair size={22} />
           </div>
@@ -402,7 +402,10 @@ function App() {
               sortKey={sortKey}
               sortAsc={sortAsc}
               onSort={changeSort}
-              onSelect={(entry) => setSelectedKey(entryKey(entry))}
+              onSelect={(entry) => {
+                const nextKey = entryKey(entry);
+                setSelectedKey((current) => (current === nextKey ? null : nextKey));
+              }}
             />
           </Panel>
 
@@ -874,6 +877,14 @@ function compareRows(a: ResourceEntry, b: ResourceEntry, key: SortKey, asc: bool
   return asc ? result : -result;
 }
 
+async function runWindowAction(action: () => Promise<void>) {
+  try {
+    await action();
+  } catch (error) {
+    console.error("Window action failed", error);
+  }
+}
+
 function singlePath(value: string | string[] | null): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value;
@@ -1030,14 +1041,6 @@ button {
   border-bottom: 2px solid var(--border-hi);
   padding: 0 12px;
   gap: 8px;
-  -webkit-app-region: drag;
-  app-region: drag;
-}
-
-#navbar button,
-#navbar input {
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 .nav-btn {
