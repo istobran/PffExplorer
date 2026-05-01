@@ -12,9 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "pff-explorer",
-        "width": 800,
-        "height": 600
+        "title": "PFF Resource Explorer",
+        "width": 1320,
+        "height": 820,
+        "minWidth": 980,
+        "minHeight": 640,
+        "decorations": false
       }
     ],
     "security": {
