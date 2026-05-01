@@ -4,7 +4,7 @@ import { BinaryPreview } from "@/components/preview/BinaryPreview";
 import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
-import { PreviewTextLine } from "@/components/preview/PreviewTextLine";
+import { PreviewTextBlock } from "@/components/preview/PreviewTextBlock";
 
 export type PreviewPanelProps = {
   entry: ResourceEntry | null;
@@ -27,19 +27,15 @@ export function PreviewPanel(props: PreviewPanelProps) {
 
   if (props.preview.status === "text" && props.preview.text != null) {
     const ext = props.entry.name.split(".").pop()?.toLowerCase() ?? "";
-    const lines = props.preview.text.split("\n");
 
     return (
       <PreviewBody>
         <PreviewMeta entry={props.entry} preview={props.preview} />
-        {lines.map((line, index) => (
-          <PreviewTextLine
-            key={`${index}-${line}`}
-            line={line}
-            lineNumber={index + 1}
-            extension={ext}
-          />
-        ))}
+        <PreviewTextBlock
+          text={props.preview.text}
+          extension={ext}
+          animationKey={`${props.entry.archivePath}::${props.entry.tableIndex}`}
+        />
       </PreviewBody>
     );
   }

@@ -5,6 +5,7 @@ export type PreviewTextLineProps = {
   line: string;
   lineNumber: number;
   extension: string;
+  cursor?: boolean;
 };
 
 export function PreviewTextLine(props: PreviewTextLineProps) {
@@ -16,6 +17,7 @@ export function PreviewTextLine(props: PreviewTextLineProps) {
           __html: syntaxHighlight(props.line, props.extension),
         }}
       />
+      {props.cursor && <span className="preview-cursor" />}
     </div>
   );
 }
@@ -53,5 +55,28 @@ const previewTextLineClass = css`
 
   .preview-attr {
     color: #aa8a4a;
+  }
+
+  .preview-cursor {
+    display: inline-block;
+    width: 6px;
+    height: 12px;
+    margin-left: 1px;
+    background: var(--green-hi);
+    box-shadow: 0 0 6px rgba(127, 255, 127, 0.5);
+    transform: translateY(2px);
+    animation: preview-cursor-blink 0.8s steps(1) infinite;
+  }
+
+  @keyframes preview-cursor-blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+
+    50%,
+    100% {
+      opacity: 0;
+    }
   }
 `;
