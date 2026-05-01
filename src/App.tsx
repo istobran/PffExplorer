@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import {
+  currentMonitor,
+  getCurrentWindow,
+  PhysicalPosition,
+  PhysicalSize,
+  primaryMonitor,
+} from "@tauri-apps/api/window";
 import { message, open, save } from "@tauri-apps/plugin-dialog";
 import { PackageTree } from "@/components/PackageTree";
 import { Panel } from "@/components/Panel";
@@ -56,6 +62,10 @@ function App() {
     progressLabel: "IDLE",
     progress: null,
   });
+
+  useEffect(() => {
+    void fitWindowToWorkArea();
+  }, []);
 
   const selectedEntry = useMemo(() => {
     if (!selectedKey) return null;
@@ -268,10 +278,6 @@ function App() {
     await runWindowAction(() => getCurrentWindow().minimize());
   }
 
-  async function toggleMaximizeWindow() {
-    await runWindowAction(() => getCurrentWindow().toggleMaximize());
-  }
-
   async function closeWindow() {
     await runWindowAction(() => getCurrentWindow().close());
   }
@@ -282,7 +288,6 @@ function App() {
         onOpenProject={openProject}
         onOpenFile={openFile}
         onMinimize={minimizeWindow}
-        onToggleMaximize={toggleMaximizeWindow}
         onClose={closeWindow}
       />
 
@@ -341,6 +346,29 @@ async function runWindowAction(action: () => Promise<void>) {
     await action();
   } catch (error) {
     console.error("Window action failed", error);
+  }
+}
+
+async function fitWindowToWorkArea() {
+  const appWindow = getCurrentWindow();
+
+  try {
+    const monitor = (await currentMonitor()) ?? (await primaryMonitor());
+    if (!monitor) return;
+
+    const workArea = monitor.workArea;
+    await appWindow.setPosition(
+      new PhysicalPosition(workArea.position.x, workArea.position.y),
+    );
+    await appWindow.setSize(new PhysicalSize(workArea.size.width, workArea.size.height));
+  } catch (error) {
+    console.error("Window sizing failed", error);
+  } finally {
+    try {
+      await appWindow.show();
+    } catch (error) {
+      console.error("Window show failed", error);
+    }
   }
 }
 

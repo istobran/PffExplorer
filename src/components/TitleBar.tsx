@@ -1,5 +1,5 @@
 import { css } from "@emotion/css";
-import { FileArchive, FolderOpen, Minus, Square, X } from "lucide-react";
+import { FileArchive, FolderOpen, Minus, X } from "lucide-react";
 import { NavButton } from "@/components/titlebar/NavButton";
 import { TitleLogo } from "@/components/titlebar/TitleLogo";
 import { WindowControlButton } from "@/components/titlebar/WindowControlButton";
@@ -8,7 +8,6 @@ export type TitleBarProps = {
   onOpenProject: () => void;
   onOpenFile: () => void;
   onMinimize: () => void;
-  onToggleMaximize: () => void;
   onClose: () => void;
 };
 
@@ -27,11 +26,6 @@ export function TitleBar(props: TitleBarProps) {
       <TitleLogo />
       <div className="win-controls">
         <WindowControlButton icon={Minus} title="Minimize" onClick={props.onMinimize} />
-        <WindowControlButton
-          icon={Square}
-          title="Maximize"
-          onClick={props.onToggleMaximize}
-        />
         <WindowControlButton icon={X} title="Close" variant="close" onClick={props.onClose} />
       </div>
     </nav>
