@@ -19,10 +19,8 @@ import {
   basename,
   compareRows,
   entryKey,
-  exportDefaultName,
 } from "@/lib/format";
 import type {
-  ExportMode,
   ExportResult,
   PreviewResponse,
   ResourceKind,
@@ -55,7 +53,6 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [exportMode, setExportMode] = useState<ExportMode>("decoded");
   const [status, setStatus] = useState<StatusState>({
     label: "READY",
     target: "-",
@@ -206,8 +203,6 @@ function App() {
 
   function selectArchive(path: string | null) {
     setActiveArchivePath(path);
-    setSearchText("");
-    setKindFilter("ALL");
     setSelectedKey(null);
     setPreview(null);
     setStatus({
@@ -234,10 +229,9 @@ function App() {
   async function exportSelected() {
     if (!selectedEntry) return;
 
-    const defaultPath = exportDefaultName(selectedEntry.name, exportMode);
     const outputPath = await save({
-      title: `Export ${exportMode.toUpperCase()} resource`,
-      defaultPath,
+      title: "Export RAW resource",
+      defaultPath: selectedEntry.name,
     });
     if (!outputPath) return;
 
@@ -254,7 +248,7 @@ function App() {
           archivePath: selectedEntry.archivePath,
           entryIndex: selectedEntry.tableIndex,
           outputPath,
-          mode: exportMode,
+          mode: "raw",
         },
       });
       setStatus({
@@ -306,11 +300,9 @@ function App() {
             <ResourceToolbar
               searchText={searchText}
               kindFilter={kindFilter}
-              exportMode={exportMode}
               hasSelection={Boolean(selectedEntry)}
               onSearch={setSearchText}
               onKindFilter={setKindFilter}
-              onExportMode={setExportMode}
               onExport={exportSelected}
             />
             <ResourceTable
@@ -319,6 +311,7 @@ function App() {
               searchText={searchText}
               sortKey={sortKey}
               sortAsc={sortAsc}
+              showArchiveTag={activeArchivePath === null}
               onSort={changeSort}
               onSelect={(entry) => selectResource(entryKey(entry))}
             />
@@ -420,13 +413,13 @@ const rightColumnClass = css`
   }
 
   #preview-panel {
-    width: 330px;
+    width: 550px;
     flex-shrink: 0;
   }
 
   @media (max-width: 1100px) {
     #preview-panel {
-      width: 300px;
+      width: 550px;
     }
   }
 `;

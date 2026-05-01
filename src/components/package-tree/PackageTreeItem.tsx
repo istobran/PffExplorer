@@ -17,6 +17,7 @@ export function PackageTreeItem(props: PackageTreeItemProps) {
 
   return (
     <button
+      type="button"
       className={clsx(packageTreeItemClass, props.all && "all-node", props.active && "active")}
       onClick={props.onClick}
       title={props.title}

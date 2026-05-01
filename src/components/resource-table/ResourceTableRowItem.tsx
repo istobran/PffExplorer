@@ -11,6 +11,7 @@ export type ResourceTableRowItemProps = {
   row: ResourceTableRow;
   selected: boolean;
   searchText: string;
+  showArchiveTag: boolean;
   top: number;
   onSelect: () => void;
 };
@@ -18,6 +19,7 @@ export type ResourceTableRowItemProps = {
 export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
   return (
     <button
+      type="button"
       className={clsx(resourceTableRowItemClass, props.selected && "selected")}
       style={{ transform: `translateY(${props.top}px)` }}
       onClick={props.onSelect}
@@ -28,7 +30,7 @@ export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
       </TableCell>
       <TableCell className="file-cell">
         <HighlightedText text={props.row.name} query={props.searchText} />
-        <span className="src-tag">{props.row.archiveName}</span>
+        {props.showArchiveTag && <span className="src-tag">{props.row.archiveName}</span>}
       </TableCell>
       <TableCell>
         <ResourceTypePill kind={props.row.kind} />

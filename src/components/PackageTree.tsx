@@ -1,4 +1,5 @@
 import { css } from "@emotion/css";
+import type { KeyboardEvent } from "react";
 import { Archive, Box, FileArchive } from "lucide-react";
 import type { ArchiveSummary } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
@@ -12,8 +13,36 @@ export type PackageTreeProps = {
 };
 
 export function PackageTree(props: PackageTreeProps) {
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+    event.preventDefault();
+
+    const paths = [null, ...props.archives.map((archive) => archive.path)];
+    if (paths.length === 0) return;
+
+    const currentIndex = Math.max(
+      paths.findIndex((path) => path === props.activeArchivePath),
+      0,
+    );
+    const nextIndex =
+      event.key === "ArrowDown"
+        ? Math.min(currentIndex + 1, paths.length - 1)
+        : Math.max(currentIndex - 1, 0);
+
+    if (nextIndex !== currentIndex) {
+      props.onSelect(paths[nextIndex]);
+    }
+  }
+
   return (
-    <div className={packageTreeClass}>
+    <div
+      className={packageTreeClass}
+      tabIndex={0}
+      role="listbox"
+      aria-label="Packages"
+      onKeyDown={handleKeyDown}
+    >
       <PackageTreeItem
         icon={Archive}
         label="ALL PACKAGES"
@@ -46,4 +75,9 @@ const packageTreeClass = css`
   flex: 1;
   overflow-y: auto;
   padding: 4px 0;
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--green-dim);
+  }
 `;

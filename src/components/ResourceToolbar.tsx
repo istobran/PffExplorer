@@ -1,10 +1,8 @@
 import { css } from "@emotion/css";
 import { Download } from "lucide-react";
-import type { ExportMode, ResourceKind } from "@/types";
+import type { ResourceKind } from "@/types";
 import { KindFilterButton } from "@/components/toolbar/KindFilterButton";
 import { SearchBox } from "@/components/toolbar/SearchBox";
-import { SegmentedButton } from "@/components/toolbar/SegmentedButton";
-import { SegmentedControl } from "@/components/toolbar/SegmentedControl";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { ToolbarSeparator } from "@/components/toolbar/ToolbarSeparator";
 
@@ -21,11 +19,9 @@ const FILTERS: Array<ResourceKind | "ALL"> = [
 export type ResourceToolbarProps = {
   searchText: string;
   kindFilter: ResourceKind | "ALL";
-  exportMode: ExportMode;
   hasSelection: boolean;
   onSearch: (value: string) => void;
   onKindFilter: (value: ResourceKind | "ALL") => void;
-  onExportMode: (value: ExportMode) => void;
   onExport: () => void;
 };
 
@@ -44,23 +40,12 @@ export function ResourceToolbar(props: ResourceToolbarProps) {
         />
       ))}
       <ToolbarSeparator />
-      <SegmentedControl label="Export mode">
-        <SegmentedButton
-          active={props.exportMode === "decoded"}
-          onClick={() => props.onExportMode("decoded")}
-          title="Export decoded bytes after BFC1/SCR/RTXT transforms"
-        >
-          DECODED
-        </SegmentedButton>
-        <SegmentedButton
-          active={props.exportMode === "raw"}
-          onClick={() => props.onExportMode("raw")}
-          title="Export exact bytes stored in the archive"
-        >
-          RAW
-        </SegmentedButton>
-      </SegmentedControl>
-      <ToolbarButton className="action" disabled={!props.hasSelection} onClick={props.onExport}>
+      <ToolbarButton
+        className="action"
+        disabled={!props.hasSelection}
+        onClick={props.onExport}
+        title="Export exact bytes stored in the archive"
+      >
         <Download size={12} />
         <span>EXPORT</span>
       </ToolbarButton>

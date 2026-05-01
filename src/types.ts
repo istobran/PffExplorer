@@ -2,8 +2,6 @@ export type ResourceKind = "TEX" | "SND" | "MDL" | "SHD" | "CFG" | "DAT";
 
 export type SortKey = "name" | "kind" | "size" | "offset" | "checksum" | "archiveName";
 
-export type ExportMode = "raw" | "decoded";
-
 export type ArchiveSummary = {
   path: string;
   name: string;

@@ -1,4 +1,4 @@
-import type { ExportMode, ResourceEntry, SortKey } from "@/types";
+import type { ResourceEntry, SortKey } from "@/types";
 
 export function basename(path: string) {
   return path.split(/[\\/]/).pop() || path;
@@ -6,13 +6,6 @@ export function basename(path: string) {
 
 export function entryKey(entry: Pick<ResourceEntry, "archivePath" | "tableIndex">) {
   return `${entry.archivePath}::${entry.tableIndex}`;
-}
-
-export function exportDefaultName(name: string, mode: ExportMode) {
-  if (mode === "decoded" && name.toLowerCase().endsWith(".rtxt")) {
-    return `${name.slice(0, -5)}.toml`;
-  }
-  return name;
 }
 
 export function hex32(value: number) {
