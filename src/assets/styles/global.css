@@ -1,0 +1,87 @@
+:root {
+  --bg: #050c05;
+  --panel-bg: #070e07;
+  --border: #1c4a1c;
+  --border-hi: #2d8a2d;
+  --green: #39e839;
+  --green-dim: #1e7a1e;
+  --green-hi: #7fff7f;
+  --green-sel: #00cc00;
+  --sel-bg: #092909;
+  --sel-row: #0b3d0b;
+  --hover-row: #091809;
+  --title: #55ff55;
+  --text-dim: #255525;
+  --font-mono: "Share Tech Mono", "Courier New", monospace;
+  --font-vt: "VT323", "Share Tech Mono", monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  user-select: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+}
+
+input,
+button {
+  font: inherit;
+}
+
+button {
+  border-radius: 0;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030803;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hi);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--green-dim);
+}
