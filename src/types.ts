@@ -1,5 +1,3 @@
-export type ResourceKind = "TEX" | "SND" | "MDL" | "SHD" | "CFG" | "DAT";
-
 export type SortKey = "name" | "kind" | "size" | "offset" | "checksum" | "archiveName";
 
 export type ArchiveSummary = {
@@ -17,7 +15,7 @@ export type ResourceEntry = {
   archiveName: string;
   tableIndex: number;
   name: string;
-  kind: ResourceKind;
+  kind: string;
   size: number;
   offset: number;
   timestamp: number;

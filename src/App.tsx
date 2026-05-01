@@ -23,7 +23,6 @@ import {
 import type {
   ExportResult,
   PreviewResponse,
-  ResourceKind,
   SortKey,
   StatusState,
   WorkspaceSnapshot,
@@ -47,7 +46,6 @@ function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(EMPTY_SNAPSHOT);
   const [activeArchivePath, setActiveArchivePath] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [kindFilter, setKindFilter] = useState<ResourceKind | "ALL">("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -77,7 +75,6 @@ function App() {
         : snapshot.entries.filter((entry) => entry.archivePath === activeArchivePath);
 
     const rows = source
-      .filter((entry) => kindFilter === "ALL" || entry.kind === kindFilter)
       .filter((entry) => {
         if (!query) return true;
         return (
@@ -88,7 +85,7 @@ function App() {
       .sort((a, b) => compareRows(a, b, sortKey, sortAsc));
 
     return rows.map((entry, index) => ({ ...entry, rowNumber: index + 1 }));
-  }, [activeArchivePath, kindFilter, searchText, snapshot.entries, sortAsc, sortKey]);
+  }, [activeArchivePath, searchText, snapshot.entries, sortAsc, sortKey]);
 
   useEffect(() => {
     if (!selectedEntry) {
@@ -179,7 +176,6 @@ function App() {
       setSnapshot(next);
       setActiveArchivePath(null);
       setSearchText("");
-      setKindFilter("ALL");
       setSelectedKey(null);
       setPreview(null);
       setStatus({
@@ -299,10 +295,8 @@ function App() {
           <Panel id="table-panel" title="RESOURCE FILES" sub={`${visibleRows.length} FILES`}>
             <ResourceToolbar
               searchText={searchText}
-              kindFilter={kindFilter}
               hasSelection={Boolean(selectedEntry)}
               onSearch={setSearchText}
-              onKindFilter={setKindFilter}
               onExport={exportSelected}
             />
             <ResourceTable

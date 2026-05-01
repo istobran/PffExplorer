@@ -2,9 +2,9 @@ import { css } from "@emotion/css";
 import clsx from "clsx";
 import type { ResourceTableRow } from "@/types";
 import { formatBytes, hex32 } from "@/lib/format";
+import { FileExtensionPill } from "@/components/resource-table/FileExtensionPill";
 import { HighlightedText } from "@/components/resource-table/HighlightedText";
 import { RESOURCE_TABLE_COLUMNS } from "@/components/resource-table/resourceTableLayout";
-import { ResourceTypePill } from "@/components/resource-table/ResourceTypePill";
 import { TableCell } from "@/components/resource-table/TableCell";
 
 export type ResourceTableRowItemProps = {
@@ -33,7 +33,7 @@ export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
         {props.showArchiveTag && <span className="src-tag">{props.row.archiveName}</span>}
       </TableCell>
       <TableCell>
-        <ResourceTypePill kind={props.row.kind} />
+        <FileExtensionPill name={props.row.name} />
       </TableCell>
       <TableCell num>{formatBytes(props.row.size)}</TableCell>
       <TableCell num>{hex32(props.row.offset)}</TableCell>

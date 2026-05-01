@@ -1,6 +1,6 @@
 import { css } from "@emotion/css";
 import type { PreviewResponse, ResourceEntry } from "@/types";
-import { formatBytes } from "@/lib/format";
+import { fileExtensionLabel, formatBytes } from "@/lib/format";
 
 export type PreviewMetaProps = {
   entry: ResourceEntry;
@@ -11,7 +11,7 @@ export function PreviewMeta(props: PreviewMetaProps) {
   return (
     <div className={previewMetaClass}>
       <span>{formatBytes(props.preview.byteLen)}</span>
-      <span>{props.entry.kind}</span>
+      <span>{fileExtensionLabel(props.entry.name)}</span>
       <span>
         {props.preview.transforms.length ? props.preview.transforms.join(" + ") : "RAW"}
       </span>

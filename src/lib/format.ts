@@ -8,6 +8,19 @@ export function entryKey(entry: Pick<ResourceEntry, "archivePath" | "tableIndex"
   return `${entry.archivePath}::${entry.tableIndex}`;
 }
 
+export function fileExtension(name: string) {
+  const base = basename(name);
+  const dotIndex = base.lastIndexOf(".");
+  if (dotIndex < 0 || dotIndex === base.length - 1) return "";
+
+  return base.slice(dotIndex + 1).toLowerCase();
+}
+
+export function fileExtensionLabel(name: string) {
+  const ext = fileExtension(name);
+  return ext ? ext.toUpperCase() : "-";
+}
+
 export function hex32(value: number) {
   return `0x${(value >>> 0).toString(16).toUpperCase().padStart(8, "0")}`;
 }
@@ -30,6 +43,11 @@ export function formatBytes(size: number) {
 export function compareRows(a: ResourceEntry, b: ResourceEntry, key: SortKey, asc: boolean) {
   let left: string | number | null = a[key];
   let right: string | number | null = b[key];
+
+  if (key === "kind") {
+    left = fileExtension(a.name);
+    right = fileExtension(b.name);
+  }
 
   if (key === "checksum") {
     left = a.checksum ?? -1;
