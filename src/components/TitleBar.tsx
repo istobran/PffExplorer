@@ -70,10 +70,16 @@ const titleBarClass = css`
     display: flex;
     align-items: center;
     gap: 2px;
-    padding-left: 14px;
-    border-left: 1px solid var(--border);
-    height: 100%;
     flex-shrink: 0;
+
+    &::before {
+      content: "";
+      width: 1px;
+      height: 30px;
+      margin-right: 6px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
   }
 
   @media (max-width: 1100px) {
