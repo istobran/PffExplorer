@@ -34,7 +34,7 @@ const windowControlButtonClass = css`
   height: 26px;
   background: none;
   border: 1px solid var(--border);
-  color: var(--green-dim);
+  color: var(--text-dim);
   cursor: var(--cursor-crosshair), crosshair;
   outline: none;
   transition: all 0.08s;

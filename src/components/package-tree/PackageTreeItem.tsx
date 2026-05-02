@@ -147,13 +147,13 @@ const packageTreeItemClass = css`
   }
 
   .pff-icon {
-    color: var(--green-dim);
+    color: var(--text-dim);
     flex-shrink: 0;
   }
 
   .pff-name {
     flex: 1;
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.8px;
     text-transform: uppercase;
     overflow: hidden;

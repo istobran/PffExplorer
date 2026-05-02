@@ -30,7 +30,7 @@ const emptyStateClass = css`
   justify-content: center;
   flex: 1;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
   flex-direction: column;

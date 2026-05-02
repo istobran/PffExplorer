@@ -30,7 +30,7 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 export const toolbarButtonClass = css`
   background: none;
   border: 1px solid var(--border-hi);
-  color: var(--green-dim);
+  color: var(--text-dim);
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;

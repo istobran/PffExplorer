@@ -239,7 +239,7 @@ const imagePreviewDisplayClass = css`
     align-items: center;
     justify-content: center;
     color: var(--green-hi);
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 1px;
     text-shadow: var(--hover-text-glow);
   }

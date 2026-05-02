@@ -48,7 +48,7 @@ const titleLogoClass = css`
 
   .logo-text {
     font-family: var(--font-vt);
-    font-size: 15px;
+    font-size: 16px;
     letter-spacing: 2px;
     color: var(--green-sel);
     text-transform: uppercase;
@@ -58,7 +58,7 @@ const titleLogoClass = css`
 
     span {
       display: block;
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 1px;
       color: var(--text-dim);
     }

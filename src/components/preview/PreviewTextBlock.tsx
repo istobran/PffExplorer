@@ -453,14 +453,14 @@ const textPreviewLoadingClass = css`
   gap: 8px;
   padding: 12px 0;
   color: var(--green-hi);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 1px;
   text-shadow: var(--hover-text-glow);
   animation: ${textLoadingBlink} 0.9s steps(1) infinite;
 
   &[data-compact="true"] {
     padding: 8px 0 2px;
-    color: var(--green-dim);
+    color: var(--text-dim);
   }
 
   .loading-caret {

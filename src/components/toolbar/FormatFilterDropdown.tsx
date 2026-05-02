@@ -114,7 +114,7 @@ const formatFilterDropdownClass = css`
     padding: 0 8px;
     background: none;
     border: 1px solid var(--border-hi);
-    color: var(--green-dim);
+    color: var(--text-dim);
     font-size: 10px;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -147,7 +147,7 @@ const formatFilterDropdownClass = css`
 
   .format-filter-button:disabled {
     opacity: 0.4;
-    color: var(--green-dim);
+    color: var(--text-dim);
     border-color: var(--border-hi);
     text-shadow: none;
     cursor: default;
@@ -180,8 +180,8 @@ const formatFilterDropdownClass = css`
     padding: 5px 10px;
     background: transparent;
     border: none;
-    color: var(--green-dim);
-    font-size: 11px;
+    color: var(--text-dim);
+    font-size: 12px;
     letter-spacing: 1px;
     text-align: left;
     text-transform: uppercase;

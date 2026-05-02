@@ -6,7 +6,7 @@
   --green: #39e839;
   --green-dim: #1e7a1e;
   --green-hi: #7fff7f;
-  --green-sel: #00cc00;
+  --green-sel: #00fc00;
   --danger: #ff5555;
   --hover-text: #d77e42;
   --hover-text-glow: 0 0 8px rgba(215, 126, 66, 0.7);
@@ -14,8 +14,8 @@
   --sel-bg: #092909;
   --sel-row: #0b3d0b;
   --hover-row: #091809;
-  --title: #55ff55;
-  --text-dim: #255525;
+  --title: #c3fdc3;
+  --text-dim: #31aa31;
   --font-mono: "Share Tech Mono", "Courier New", monospace;
   --font-vt: "VT323", "Share Tech Mono", monospace;
   --cursor-crosshair: url("../images/df1-cursor.png") 11 11;
@@ -46,7 +46,7 @@ body {
   background: var(--bg);
   color: var(--green);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   user-select: none;
   cursor: var(--cursor-crosshair), crosshair;
 }

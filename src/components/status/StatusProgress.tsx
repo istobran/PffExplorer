@@ -70,7 +70,7 @@ const statusProgressClass = css`
 
   .prog-pct {
     font-size: 10px;
-    color: var(--green-dim);
+    color: var(--text-dim);
     min-width: 32px;
     text-align: right;
     letter-spacing: 1px;

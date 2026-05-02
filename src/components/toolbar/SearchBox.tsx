@@ -49,7 +49,7 @@ const searchBoxClass = css`
     background: #030803;
     border: 1px solid var(--border-hi);
     color: var(--green);
-    font-size: 11px;
+    font-size: 12px;
     padding: 1px 8px 1px 24px;
     height: 20px;
     outline: none;

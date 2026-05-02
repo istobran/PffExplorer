@@ -36,7 +36,7 @@ const tableCellClass = css`
   height: 100%;
   line-height: 1;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.5px;
   border-right: 1px solid #0d200d;
   overflow: hidden;
@@ -55,7 +55,7 @@ const tableCellClass = css`
   }
 
   &.num {
-    color: var(--green-dim);
+    color: var(--text-dim);
     font-size: 10px;
     letter-spacing: 0;
     font-variant-numeric: tabular-nums;

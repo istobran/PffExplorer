@@ -239,7 +239,7 @@ const imagePreviewModeToggleClass = css`
     border: 0;
     border-right: 1px solid var(--border-hi);
     background: transparent;
-    color: var(--green-dim);
+    color: var(--text-dim);
     font: inherit;
     font-size: 10px;
     line-height: 1;
@@ -259,7 +259,7 @@ const imagePreviewModeToggleClass = css`
   }
 
   button.active {
-    color: var(--green);
+    color: var(--green-sel);
     background: rgba(0, 204, 0, 0.16);
     box-shadow: inset 0 0 8px rgba(0, 204, 0, 0.16);
   }

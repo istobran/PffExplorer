@@ -35,8 +35,8 @@ const navButtonClass = css`
   padding: 0 14px;
   background: #0a160a;
   border: 1px solid var(--border-hi);
-  color: var(--green-dim);
-  font-size: 11px;
+  color: var(--text-dim);
+  font-size: 12px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   cursor: var(--cursor-crosshair), crosshair;

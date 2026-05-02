@@ -111,7 +111,7 @@ const resourceTableRowItemClass = css`
   }
 
   .archive-cell {
-    color: var(--green-dim);
+    color: var(--text-dim);
     overflow: hidden;
     text-overflow: ellipsis;
   }

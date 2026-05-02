@@ -15,7 +15,7 @@ export function BinaryPreview(props: BinaryPreviewProps) {
 }
 
 const binaryPreviewClass = css`
-  color: var(--green-dim);
+  color: var(--text-dim);
 
   .binary-title {
     margin-bottom: 8px;

@@ -28,24 +28,24 @@ const tagClass = css`
   padding: 0 8px;
   background: #0a1a0a;
   border: 1px solid var(--border-hi);
-  color: var(--green-dim);
-  font-size: 11px;
+  color: var(--green);
+  font-size: 12px;
   line-height: 1;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   flex-shrink: 0;
 
   &:hover {
-    color: var(--green-dim);
+    color: var(--green);
     text-shadow: none;
   }
 
   &.active {
-    color: var(--green);
+    color: var(--green-sel);
     border-color: var(--green-sel);
   }
 
   &.active:hover {
-    color: var(--green);
+    color: var(--green-sel);
   }
 `;
