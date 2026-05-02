@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { BinaryPreview } from "@/components/preview/BinaryPreview";
 import {
+  AudioPreviewDisplay,
+  AudioPreviewLoadingBox,
+} from "@/components/preview/AudioPreviewDisplay";
+import {
   ImagePreviewDisplay,
   ImagePreviewLoadingBox,
 } from "@/components/preview/ImagePreviewDisplay";
@@ -11,7 +15,12 @@ import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
 import { PreviewTextBlock, PreviewTextLoading } from "@/components/preview/PreviewTextBlock";
-import { playMissionBriefingSelect, playUiHover } from "@/lib/sounds";
+import {
+  playMissionBriefingSelect,
+  playUiHover,
+  resumeDf1MenuMusic,
+  suspendDf1MenuMusic,
+} from "@/lib/sounds";
 
 export type PreviewPanelProps = {
   entry: ResourceEntry | null;
@@ -23,6 +32,10 @@ export function PreviewPanel(props: PreviewPanelProps) {
   const [nightVision, setNightVision] = useState(true);
   const imagePreviewActive =
     !props.loading && props.preview?.status === "image" && props.preview.image != null;
+  const audioPreviewActive =
+    props.entry != null &&
+    isPreviewableAudioName(props.entry.name) &&
+    (props.loading || (props.preview?.status === "audio" && props.preview.audio != null));
 
   useEffect(() => {
     if (!imagePreviewActive) return;
@@ -44,11 +57,29 @@ export function PreviewPanel(props: PreviewPanelProps) {
     };
   }, [imagePreviewActive]);
 
+  useEffect(() => {
+    if (!audioPreviewActive) return;
+
+    suspendDf1MenuMusic();
+
+    return () => {
+      resumeDf1MenuMusic();
+    };
+  }, [audioPreviewActive]);
+
   if (!props.entry) {
     return <PreviewEmptyState icon={FileArchive} message="SELECT A RESOURCE TO PREVIEW" />;
   }
 
   if (props.loading) {
+    if (isPreviewableAudioName(props.entry.name)) {
+      return (
+        <PreviewBody compact>
+          <AudioPreviewLoadingBox />
+        </PreviewBody>
+      );
+    }
+
     if (isPreviewableImageName(props.entry.name)) {
       return (
         <PreviewBody compact>
@@ -104,6 +135,19 @@ export function PreviewPanel(props: PreviewPanelProps) {
     );
   }
 
+  if (props.preview.status === "audio" && props.preview.audio != null) {
+    return (
+      <PreviewBody compact>
+        <PreviewMeta entry={props.entry} preview={props.preview} />
+        <AudioPreviewDisplay
+          audio={props.preview.audio}
+          name={props.entry.name}
+          animationKey={`${props.entry.archivePath}::${props.entry.tableIndex}`}
+        />
+      </PreviewBody>
+    );
+  }
+
   return (
     <PreviewBody>
       <PreviewMeta entry={props.entry} preview={props.preview} />
@@ -150,6 +194,10 @@ function isPreviewableTextName(name: string) {
     "csv",
     "toml",
   );
+}
+
+function isPreviewableAudioName(name: string) {
+  return matchesExtension(name, "wav");
 }
 
 function matchesExtension(name: string, ...extensions: string[]) {

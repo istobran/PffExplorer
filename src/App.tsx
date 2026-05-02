@@ -163,6 +163,7 @@ function App() {
                 status: "binary",
                 text: null,
                 image: null,
+                audio: null,
                 hexHead: "",
                 byteLen: selectedEntry.size,
                 transforms: [],

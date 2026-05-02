@@ -51,6 +51,8 @@ pub enum PffError {
     Rtxt(String),
     #[error("image preview failed for {name}: {message}")]
     ImageDecode { name: String, message: String },
+    #[error("audio preview failed for {name}: {message}")]
+    AudioDecode { name: String, message: String },
     #[error("image preview is too large for {name}: {width}x{height}")]
     ImageTooLarge {
         name: String,
@@ -121,6 +123,7 @@ pub struct PreviewResponse {
     pub status: PreviewStatus,
     pub text: Option<String>,
     pub image: Option<ImagePreview>,
+    pub audio: Option<AudioPreview>,
     pub hex_head: String,
     pub byte_len: usize,
     pub transforms: Vec<String>,
@@ -132,6 +135,7 @@ pub struct PreviewResponse {
 pub enum PreviewStatus {
     Text,
     Image,
+    Audio,
     Binary,
     TooLarge,
 }
@@ -144,6 +148,20 @@ pub struct ImagePreview {
     pub width: u32,
     pub height: u32,
     pub format: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioPreview {
+    pub data_url: Option<String>,
+    pub file_path: Option<String>,
+    pub format: String,
+    pub mime_type: String,
+    pub codec: String,
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u16>,
+    pub bits_per_sample: Option<u16>,
+    pub duration_seconds: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -594,6 +612,7 @@ fn preview_from_bytes(
                     status: PreviewStatus::Image,
                     text: None,
                     image: Some(image),
+                    audio: None,
                     hex_head,
                     byte_len,
                     transforms,
@@ -605,6 +624,43 @@ fn preview_from_bytes(
                     status: PreviewStatus::Binary,
                     text: None,
                     image: None,
+                    audio: None,
+                    hex_head,
+                    byte_len,
+                    transforms,
+                    message: Some(error.to_string()),
+                };
+            }
+        }
+    }
+
+    if is_previewable_audio(&entry.name, &data) {
+        let cache_key = preview_cache_key(archive_path, entry, byte_len);
+        match audio_preview_from_bytes_with_cache(&entry.name, &data, preview_cache_dir, &cache_key)
+        {
+            Ok(audio_result) => {
+                let mut transforms = transforms;
+                if let Some(transform) = audio_result.transform {
+                    transforms.push(transform);
+                }
+
+                return PreviewResponse {
+                    status: PreviewStatus::Audio,
+                    text: None,
+                    image: None,
+                    audio: Some(audio_result.preview),
+                    hex_head,
+                    byte_len,
+                    transforms,
+                    message: None,
+                };
+            }
+            Err(error) => {
+                return PreviewResponse {
+                    status: PreviewStatus::Binary,
+                    text: None,
+                    image: None,
+                    audio: None,
                     hex_head,
                     byte_len,
                     transforms,
@@ -619,6 +675,7 @@ fn preview_from_bytes(
             status: PreviewStatus::TooLarge,
             text: None,
             image: None,
+            audio: None,
             hex_head,
             byte_len,
             transforms,
@@ -635,6 +692,7 @@ fn preview_from_bytes(
             status: PreviewStatus::Text,
             text: Some(String::from_utf8_lossy(&data).into_owned()),
             image: None,
+            audio: None,
             hex_head,
             byte_len,
             transforms,
@@ -646,6 +704,7 @@ fn preview_from_bytes(
         status: PreviewStatus::Binary,
         text: None,
         image: None,
+        audio: None,
         hex_head,
         byte_len,
         transforms,
@@ -711,6 +770,321 @@ fn image_preview_from_bytes_with_cache(
         height,
         format,
     })
+}
+
+struct AudioPreviewResult {
+    preview: AudioPreview,
+    transform: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+struct WavMetadata {
+    audio_format: u16,
+    channels: u16,
+    sample_rate: u32,
+    byte_rate: u32,
+    block_align: u16,
+    bits_per_sample: u16,
+    data_start: usize,
+    data_len: usize,
+    samples_per_block: Option<u16>,
+}
+
+fn audio_preview_from_bytes_with_cache(
+    name: &str,
+    data: &[u8],
+    preview_cache_dir: Option<&Path>,
+    cache_key: &str,
+) -> Result<AudioPreviewResult, PffError> {
+    if !is_wav_data(data) {
+        return Err(PffError::AudioDecode {
+            name: name.to_string(),
+            message: "expected RIFF/WAVE data".to_string(),
+        });
+    }
+
+    let metadata = parse_wav_metadata(name, data)?;
+    let (playback_data, playback_ext, mime_type, transform) =
+        playback_audio_bytes(name, data, &metadata)?;
+    let playback_format = if playback_ext == "mp3" { "MP3" } else { "WAV" };
+    let duration_seconds = wav_duration_seconds(&metadata);
+
+    let (data_url, file_path) = if let Some(preview_cache_dir) = preview_cache_dir {
+        let preview_path = preview_cache_dir.join(format!("{cache_key}.{playback_ext}"));
+        fs::write(&preview_path, &playback_data)?;
+        (None, Some(preview_path.to_string_lossy().into_owned()))
+    } else {
+        let data_url = {
+            use base64::Engine as _;
+            format!(
+                "data:{mime_type};base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(playback_data)
+            )
+        };
+        (Some(data_url), None)
+    };
+
+    Ok(AudioPreviewResult {
+        preview: AudioPreview {
+            data_url,
+            file_path,
+            format: playback_format.to_string(),
+            mime_type: mime_type.to_string(),
+            codec: wav_codec_label(metadata.audio_format).to_string(),
+            sample_rate: Some(metadata.sample_rate),
+            channels: Some(metadata.channels),
+            bits_per_sample: (metadata.bits_per_sample > 0).then_some(metadata.bits_per_sample),
+            duration_seconds,
+        },
+        transform,
+    })
+}
+
+fn playback_audio_bytes(
+    name: &str,
+    data: &[u8],
+    metadata: &WavMetadata,
+) -> Result<(Vec<u8>, &'static str, &'static str, Option<String>), PffError> {
+    match metadata.audio_format {
+        0x0001 | 0x0003 => Ok((data.to_vec(), "wav", "audio/wav", None)),
+        0x0011 => {
+            let pcm = decode_ima_adpcm_wav(name, data, metadata)?;
+            Ok((
+                pcm,
+                "wav",
+                "audio/wav",
+                Some("IMA ADPCM->PCM WAV".to_string()),
+            ))
+        }
+        0x0055 => {
+            let mp3 = wav_data_chunk(name, data, metadata)?.to_vec();
+            Ok((mp3, "mp3", "audio/mpeg", Some("WAV/MP3->MP3".to_string())))
+        }
+        _ => Ok((data.to_vec(), "wav", "audio/wav", None)),
+    }
+}
+
+fn parse_wav_metadata(name: &str, data: &[u8]) -> Result<WavMetadata, PffError> {
+    if !is_wav_data(data) {
+        return Err(PffError::AudioDecode {
+            name: name.to_string(),
+            message: "missing RIFF/WAVE header".to_string(),
+        });
+    }
+
+    let mut offset = 12_usize;
+    let mut fmt: Option<WavMetadata> = None;
+    let mut data_chunk: Option<(usize, usize)> = None;
+
+    while offset + 8 <= data.len() {
+        let chunk_id = &data[offset..offset + 4];
+        let chunk_len = read_u32_at(data, offset + 4)? as usize;
+        let chunk_start = offset + 8;
+        let Some(chunk_end) = chunk_start.checked_add(chunk_len) else {
+            break;
+        };
+        if chunk_end > data.len() {
+            break;
+        }
+
+        if chunk_id == b"fmt " && chunk_len >= 16 {
+            let audio_format = read_u16_at(data, chunk_start)?;
+            let channels = read_u16_at(data, chunk_start + 2)?;
+            let sample_rate = read_u32_at(data, chunk_start + 4)?;
+            let byte_rate = read_u32_at(data, chunk_start + 8)?;
+            let block_align = read_u16_at(data, chunk_start + 12)?;
+            let bits_per_sample = read_u16_at(data, chunk_start + 14)?;
+            let samples_per_block = if chunk_len >= 22 {
+                Some(read_u16_at(data, chunk_start + 20)?).filter(|value| *value > 0)
+            } else {
+                None
+            };
+
+            fmt = Some(WavMetadata {
+                audio_format,
+                channels,
+                sample_rate,
+                byte_rate,
+                block_align,
+                bits_per_sample,
+                data_start: 0,
+                data_len: 0,
+                samples_per_block,
+            });
+        } else if chunk_id == b"data" {
+            data_chunk = Some((chunk_start, chunk_len));
+        }
+
+        offset = chunk_end + (chunk_len & 1);
+    }
+
+    let mut metadata = fmt.ok_or_else(|| PffError::AudioDecode {
+        name: name.to_string(),
+        message: "missing WAV fmt chunk".to_string(),
+    })?;
+    let (data_start, data_len) = data_chunk.ok_or_else(|| PffError::AudioDecode {
+        name: name.to_string(),
+        message: "missing WAV data chunk".to_string(),
+    })?;
+    metadata.data_start = data_start;
+    metadata.data_len = data_len;
+    Ok(metadata)
+}
+
+fn wav_duration_seconds(metadata: &WavMetadata) -> Option<f64> {
+    if metadata.byte_rate > 0 {
+        return Some(metadata.data_len as f64 / metadata.byte_rate as f64);
+    }
+
+    None
+}
+
+fn wav_codec_label(format: u16) -> &'static str {
+    match format {
+        0x0001 => "PCM",
+        0x0003 => "IEEE FLOAT",
+        0x0011 => "IMA ADPCM",
+        0x0055 => "MP3",
+        _ => "WAVE",
+    }
+}
+
+fn decode_ima_adpcm_wav(
+    name: &str,
+    data: &[u8],
+    metadata: &WavMetadata,
+) -> Result<Vec<u8>, PffError> {
+    if metadata.channels != 1 {
+        return Err(PffError::AudioDecode {
+            name: name.to_string(),
+            message: "IMA ADPCM preview currently supports mono WAV only".to_string(),
+        });
+    }
+
+    let block_align = usize::from(metadata.block_align);
+    if block_align < 4 {
+        return Err(PffError::AudioDecode {
+            name: name.to_string(),
+            message: "invalid IMA ADPCM block alignment".to_string(),
+        });
+    }
+
+    let encoded = wav_data_chunk(name, data, metadata)?;
+    let mut pcm = Vec::new();
+
+    for block in encoded.chunks(block_align) {
+        if block.len() < 4 {
+            break;
+        }
+
+        let mut predictor = i16::from_le_bytes([block[0], block[1]]) as i32;
+        let mut step_index = block[2].min(88);
+        append_i16_le(&mut pcm, predictor as i16);
+
+        for byte in &block[4..] {
+            predictor = decode_ima_nibble(byte & 0x0F, predictor, &mut step_index);
+            append_i16_le(&mut pcm, predictor as i16);
+            predictor = decode_ima_nibble(byte >> 4, predictor, &mut step_index);
+            append_i16_le(&mut pcm, predictor as i16);
+        }
+    }
+
+    let expected_samples = metadata.samples_per_block.map(|samples_per_block| {
+        let block_count = (encoded.len() + block_align.saturating_sub(1)) / block_align;
+        block_count * usize::from(samples_per_block)
+    });
+    if let Some(expected_samples) = expected_samples {
+        pcm.truncate(expected_samples * 2);
+    }
+
+    Ok(write_pcm_wav(
+        metadata.sample_rate,
+        metadata.channels,
+        16,
+        &pcm,
+    ))
+}
+
+fn decode_ima_nibble(nibble: u8, predictor: i32, step_index: &mut u8) -> i32 {
+    const INDEX_TABLE: [i32; 16] = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8];
+    const STEP_TABLE: [i32; 89] = [
+        7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60,
+        66, 73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371,
+        408, 449, 494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878,
+        2066, 2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845,
+        8630, 9493, 10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086,
+        29794, 32767,
+    ];
+
+    let step = STEP_TABLE[*step_index as usize];
+    let mut diff = step >> 3;
+    if nibble & 0x01 != 0 {
+        diff += step >> 2;
+    }
+    if nibble & 0x02 != 0 {
+        diff += step >> 1;
+    }
+    if nibble & 0x04 != 0 {
+        diff += step;
+    }
+
+    let next = if nibble & 0x08 != 0 {
+        predictor - diff
+    } else {
+        predictor + diff
+    }
+    .clamp(i16::MIN as i32, i16::MAX as i32);
+
+    let next_index = (*step_index as i32 + INDEX_TABLE[nibble as usize]).clamp(0, 88);
+    *step_index = next_index as u8;
+    next
+}
+
+fn wav_data_chunk<'a>(
+    name: &str,
+    data: &'a [u8],
+    metadata: &WavMetadata,
+) -> Result<&'a [u8], PffError> {
+    let data_end = metadata
+        .data_start
+        .checked_add(metadata.data_len)
+        .ok_or_else(|| PffError::AudioDecode {
+            name: name.to_string(),
+            message: "WAV data chunk range overflowed".to_string(),
+        })?;
+
+    data.get(metadata.data_start..data_end)
+        .ok_or_else(|| PffError::AudioDecode {
+            name: name.to_string(),
+            message: "WAV data chunk is out of bounds".to_string(),
+        })
+}
+
+fn write_pcm_wav(sample_rate: u32, channels: u16, bits_per_sample: u16, pcm: &[u8]) -> Vec<u8> {
+    let byte_rate = sample_rate * u32::from(channels) * u32::from(bits_per_sample) / 8;
+    let block_align = channels * bits_per_sample / 8;
+    let riff_size = 36_u32 + pcm.len() as u32;
+
+    let mut out = Vec::with_capacity(44 + pcm.len());
+    out.extend_from_slice(b"RIFF");
+    out.extend_from_slice(&riff_size.to_le_bytes());
+    out.extend_from_slice(b"WAVE");
+    out.extend_from_slice(b"fmt ");
+    out.extend_from_slice(&16_u32.to_le_bytes());
+    out.extend_from_slice(&1_u16.to_le_bytes());
+    out.extend_from_slice(&channels.to_le_bytes());
+    out.extend_from_slice(&sample_rate.to_le_bytes());
+    out.extend_from_slice(&byte_rate.to_le_bytes());
+    out.extend_from_slice(&block_align.to_le_bytes());
+    out.extend_from_slice(&bits_per_sample.to_le_bytes());
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&(pcm.len() as u32).to_le_bytes());
+    out.extend_from_slice(pcm);
+    out
+}
+
+fn append_i16_le(out: &mut Vec<u8>, sample: i16) {
+    out.extend_from_slice(&sample.to_le_bytes());
 }
 
 fn preview_cache_key(archive_path: &Path, entry: &PffEntry, byte_len: usize) -> String {
@@ -828,6 +1202,14 @@ fn is_previewable_image(name: &str) -> bool {
     )
 }
 
+fn is_previewable_audio(name: &str, data: &[u8]) -> bool {
+    extension(name) == "wav" || is_wav_data(data)
+}
+
+fn is_wav_data(data: &[u8]) -> bool {
+    data.len() >= 12 && data.get(0..4) == Some(b"RIFF") && data.get(8..12) == Some(b"WAVE")
+}
+
 fn is_pcx_data(data: &[u8]) -> bool {
     data.first().is_some_and(|byte| *byte == 0x0A)
 }
@@ -869,6 +1251,26 @@ fn extension(name: &str) -> String {
     name.rsplit_once('.')
         .map(|(_, ext)| ext.to_ascii_lowercase())
         .unwrap_or_default()
+}
+
+fn read_u16_at(data: &[u8], offset: usize) -> Result<u16, PffError> {
+    data.get(offset..offset + 2)
+        .and_then(|bytes| bytes.try_into().ok())
+        .map(u16::from_le_bytes)
+        .ok_or_else(|| PffError::AudioDecode {
+            name: "WAV".to_string(),
+            message: format!("offset {offset} out of bounds"),
+        })
+}
+
+fn read_u32_at(data: &[u8], offset: usize) -> Result<u32, PffError> {
+    data.get(offset..offset + 4)
+        .and_then(|bytes| bytes.try_into().ok())
+        .map(u32::from_le_bytes)
+        .ok_or_else(|| PffError::AudioDecode {
+            name: "WAV".to_string(),
+            message: format!("offset {offset} out of bounds"),
+        })
 }
 
 fn read_u32_le<R: Read>(reader: &mut R) -> io::Result<u32> {
@@ -1123,6 +1525,39 @@ mod tests {
     }
 
     #[test]
+    fn previews_wav_audio() {
+        let entry = PffEntry {
+            table_index: 0,
+            flags: 0,
+            offset: 20,
+            size: 48,
+            timestamp: 0,
+            name: "click.wav".to_string(),
+            checksum: None,
+        };
+        let preview = preview_from_bytes(
+            Path::new("fixture.pff"),
+            &entry,
+            fixture_wav(),
+            Vec::new(),
+            None,
+        );
+
+        assert!(matches!(preview.status, PreviewStatus::Audio));
+        let audio = preview.audio.expect("audio preview");
+        assert_eq!(audio.format, "WAV");
+        assert_eq!(audio.mime_type, "audio/wav");
+        assert_eq!(audio.codec, "PCM");
+        assert_eq!(audio.sample_rate, Some(8000));
+        assert_eq!(audio.channels, Some(1));
+        assert_eq!(audio.bits_per_sample, Some(8));
+        assert!(audio
+            .data_url
+            .as_deref()
+            .is_some_and(|url| url.starts_with("data:audio/wav;base64,")));
+    }
+
+    #[test]
     fn opens_external_sample_when_env_is_set() {
         let Ok(path) = std::env::var("PFF_EXPLORER_SAMPLE_PFF") else {
             return;
@@ -1187,6 +1622,11 @@ mod tests {
             name: name.to_string(),
             data: data.to_vec(),
         }
+    }
+
+    fn fixture_wav() -> Vec<u8> {
+        let pcm = [0x80_u8, 0x80, 0x80, 0x80];
+        write_pcm_wav(8000, 1, 8, &pcm)
     }
 
     fn write_fixture(path: &Path, fixtures: Vec<FixtureEntry>) {

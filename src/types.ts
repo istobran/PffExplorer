@@ -42,9 +42,10 @@ export type AppConfig = {
 };
 
 export type PreviewResponse = {
-  status: "text" | "image" | "binary" | "tooLarge";
+  status: "text" | "image" | "audio" | "binary" | "tooLarge";
   text: string | null;
   image: ImagePreview | null;
+  audio: AudioPreview | null;
   hexHead: string;
   byteLen: number;
   transforms: string[];
@@ -57,6 +58,18 @@ export type ImagePreview = {
   width: number;
   height: number;
   format: string;
+};
+
+export type AudioPreview = {
+  dataUrl: string | null;
+  filePath: string | null;
+  format: string;
+  mimeType: string;
+  codec: string;
+  sampleRate: number | null;
+  channels: number | null;
+  bitsPerSample: number | null;
+  durationSeconds: number | null;
 };
 
 export type ExportResult = {

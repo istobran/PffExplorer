@@ -55,6 +55,7 @@ let menuMusicUnlockListenersInstalled = false;
 let preloadStarted = false;
 let soundMuted = false;
 let backgroundMusicEnabled = true;
+let menuMusicSuspendCount = 0;
 
 export function preloadDf1MenuSounds() {
   if (preloadStarted || typeof window === "undefined") return;
@@ -85,6 +86,7 @@ export function startDf1MenuMusic() {
   if (typeof window === "undefined") return;
   if (soundMuted) return;
   if (!backgroundMusicEnabled) return;
+  if (menuMusicSuspendCount > 0) return;
 
   const audio = getMenuMusicAudio();
   if (!audio.paused) return;
@@ -97,6 +99,16 @@ export function startDf1MenuMusic() {
 export function stopDf1MenuMusic() {
   if (!menuMusicAudio) return;
   menuMusicAudio.pause();
+}
+
+export function suspendDf1MenuMusic() {
+  menuMusicSuspendCount += 1;
+  stopDf1MenuMusic();
+}
+
+export function resumeDf1MenuMusic() {
+  menuMusicSuspendCount = Math.max(0, menuMusicSuspendCount - 1);
+  startDf1MenuMusic();
 }
 
 export function isSoundMuted() {
