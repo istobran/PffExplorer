@@ -11,7 +11,7 @@ import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
 import { PreviewTextBlock, PreviewTextLoading } from "@/components/preview/PreviewTextBlock";
-import { playUiHover, playUiPress } from "@/lib/sounds";
+import { playMissionBriefingSelect, playUiHover } from "@/lib/sounds";
 
 export type PreviewPanelProps = {
   entry: ResourceEntry | null;
@@ -150,7 +150,7 @@ function ImagePreviewModeToggle(props: ImagePreviewModeToggleProps) {
         title="Night vision preview"
         onClick={() => props.onChange(true)}
         onPointerEnter={playUiHover}
-        onPointerDown={playUiPress}
+        onPointerDown={playMissionBriefingSelect}
       >
         NV
       </button>
@@ -161,7 +161,7 @@ function ImagePreviewModeToggle(props: ImagePreviewModeToggleProps) {
         title="Original color preview"
         onClick={() => props.onChange(false)}
         onPointerEnter={playUiHover}
-        onPointerDown={playUiPress}
+        onPointerDown={playMissionBriefingSelect}
       >
         RGB
       </button>
