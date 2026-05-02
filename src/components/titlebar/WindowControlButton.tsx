@@ -32,14 +32,16 @@ const windowControlButtonClass = css`
   background: none;
   border: 1px solid var(--border);
   color: var(--green-dim);
-  cursor: pointer;
+  cursor: var(--cursor-crosshair), crosshair;
   outline: none;
   transition: all 0.08s;
 
   &:hover {
-    background: rgba(57, 232, 57, 0.08);
-    color: var(--green);
-    border-color: var(--green-dim);
+    background: var(--hover-row);
+    color: var(--hover-text);
+    border-color: var(--green-sel);
+    box-shadow: none;
+    text-shadow: var(--hover-text-glow);
   }
 
   &.close:hover {

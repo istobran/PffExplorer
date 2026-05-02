@@ -32,16 +32,17 @@ const navButtonClass = css`
   font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  cursor: pointer;
+  cursor: var(--cursor-crosshair), crosshair;
   outline: none;
   position: relative;
   transition: all 0.1s;
 
   &:hover {
-    background: var(--sel-bg);
-    color: var(--green-hi);
-    border-color: var(--green);
-    box-shadow: 0 0 8px rgba(57, 232, 57, 0.2);
+    background: var(--hover-row);
+    color: var(--hover-text);
+    border-color: var(--green-sel);
+    box-shadow: none;
+    text-shadow: var(--hover-text-glow);
   }
 
   &::before {

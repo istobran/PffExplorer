@@ -19,6 +19,7 @@ import {
   basename,
   compareRows,
   entryKey,
+  fileExtensionLabel,
 } from "@/lib/format";
 import type {
   AppConfig,
@@ -53,6 +54,7 @@ function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(EMPTY_SNAPSHOT);
   const [activeArchivePath, setActiveArchivePath] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -77,6 +79,7 @@ function App() {
 
   const visibleRows = useMemo(() => {
     const query = searchText.trim().toLowerCase();
+    const formatSet = new Set(selectedFormats);
     const source =
       query.length > 0 || activeArchivePath === null
         ? snapshot.entries
@@ -84,6 +87,10 @@ function App() {
 
     const rows = source
       .filter((entry) => {
+        if (formatSet.size > 0 && !formatSet.has(fileExtensionLabel(entry.name))) {
+          return false;
+        }
+
         if (!query) return true;
         return (
           entry.name.toLowerCase().includes(query) ||
@@ -93,7 +100,16 @@ function App() {
       .sort((a, b) => compareRows(a, b, sortKey, sortAsc));
 
     return rows.map((entry, index) => ({ ...entry, rowNumber: index + 1 }));
-  }, [activeArchivePath, searchText, snapshot.entries, sortAsc, sortKey]);
+  }, [activeArchivePath, searchText, selectedFormats, snapshot.entries, sortAsc, sortKey]);
+
+  const availableFormats = useMemo(() => {
+    const formats = new Set<string>();
+    for (const entry of snapshot.entries) {
+      formats.add(fileExtensionLabel(entry.name));
+    }
+
+    return Array.from(formats).sort((a, b) => a.localeCompare(b));
+  }, [snapshot.entries]);
 
   useEffect(() => {
     if (!selectedEntry) {
@@ -118,6 +134,7 @@ function App() {
           setPreview({
             status: "binary",
             text: null,
+            image: null,
             hexHead: "",
             byteLen: selectedEntry.size,
             transforms: [],
@@ -330,6 +347,24 @@ function App() {
     setSelectedKey((current) => (current === nextKey ? null : nextKey));
   }
 
+  function toggleFormat(format: string) {
+    setSelectedFormats((current) => {
+      if (current.includes(format)) {
+        return current.filter((item) => item !== format);
+      }
+
+      return [...current, format].sort((a, b) => a.localeCompare(b));
+    });
+    setSelectedKey(null);
+    setPreview(null);
+  }
+
+  function clearFormats() {
+    setSelectedFormats([]);
+    setSelectedKey(null);
+    setPreview(null);
+  }
+
   async function exportSelected() {
     if (!selectedEntry) return;
 
@@ -404,8 +439,12 @@ function App() {
           <Panel id="table-panel" title="RESOURCE FILES" sub={`${visibleRows.length} FILES`}>
             <ResourceToolbar
               searchText={searchText}
+              formatOptions={availableFormats}
+              selectedFormats={selectedFormats}
               hasSelection={Boolean(selectedEntry)}
               onSearch={setSearchText}
+              onToggleFormat={toggleFormat}
+              onClearFormats={clearFormats}
               onExport={exportSelected}
             />
             <ResourceTable
@@ -414,7 +453,7 @@ function App() {
               searchText={searchText}
               sortKey={sortKey}
               sortAsc={sortAsc}
-              showArchiveTag={activeArchivePath === null}
+              showArchiveColumn={activeArchivePath === null}
               onSort={changeSort}
               onSelect={(entry) => selectResource(entryKey(entry))}
             />

@@ -33,7 +33,7 @@ export const toolbarButtonClass = css`
   text-transform: uppercase;
   padding: 0 8px;
   height: 20px;
-  cursor: pointer;
+  cursor: var(--cursor-crosshair), crosshair;
   outline: none;
   transition: all 0.08s;
   display: inline-flex;
@@ -43,14 +43,20 @@ export const toolbarButtonClass = css`
 
   &:hover {
     border-color: var(--green-sel);
-    color: var(--green);
-    background: rgba(57, 232, 57, 0.05);
+    color: var(--hover-text);
+    background: var(--hover-row);
+    box-shadow: none;
+    text-shadow: var(--hover-text-glow);
   }
 
   &.on {
     border-color: var(--green);
     color: var(--green-hi);
-    background: var(--sel-bg);
+    background: var(--sel-row);
+  }
+
+  &.on:hover {
+    color: var(--hover-text);
   }
 
   &:disabled {

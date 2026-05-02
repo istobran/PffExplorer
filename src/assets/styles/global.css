@@ -8,6 +8,8 @@
   --green-hi: #7fff7f;
   --green-sel: #00cc00;
   --danger: #ff5555;
+  --hover-text: #d77e42;
+  --hover-text-glow: 0 0 8px rgba(215, 126, 66, 0.7);
   --sel-bg: #092909;
   --sel-row: #0b3d0b;
   --hover-row: #091809;
@@ -15,6 +17,7 @@
   --text-dim: #255525;
   --font-mono: "Share Tech Mono", "Courier New", monospace;
   --font-vt: "VT323", "Share Tech Mono", monospace;
+  --cursor-crosshair: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' stroke='%2300cc00' stroke-width='1.5' fill='none'/%3E%3Ccircle cx='16' cy='16' r='1.8' fill='%2300cc00'/%3E%3Cline x1='16' y1='2' x2='16' y2='10' stroke='%2300cc00' stroke-width='1.5'/%3E%3Cline x1='16' y1='22' x2='16' y2='30' stroke='%2300cc00' stroke-width='1.5'/%3E%3Cline x1='2' y1='16' x2='10' y2='16' stroke='%2300cc00' stroke-width='1.5'/%3E%3Cline x1='22' y1='16' x2='30' y2='16' stroke='%2300cc00' stroke-width='1.5'/%3E%3C/svg%3E") 16 16;
 }
 
 *,
@@ -44,6 +47,7 @@ body {
   font-family: var(--font-mono);
   font-size: 13px;
   user-select: none;
+  cursor: var(--cursor-crosshair), crosshair;
 }
 
 body::after {
@@ -68,6 +72,7 @@ button {
 
 button {
   border-radius: 0;
+  cursor: var(--cursor-crosshair), crosshair;
 }
 
 ::-webkit-scrollbar {

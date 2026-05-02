@@ -42,12 +42,20 @@ export type AppConfig = {
 };
 
 export type PreviewResponse = {
-  status: "text" | "binary" | "tooLarge";
+  status: "text" | "image" | "binary" | "tooLarge";
   text: string | null;
+  image: ImagePreview | null;
   hexHead: string;
   byteLen: number;
   transforms: string[];
   message: string | null;
+};
+
+export type ImagePreview = {
+  dataUrl: string;
+  width: number;
+  height: number;
+  format: string;
 };
 
 export type ExportResult = {

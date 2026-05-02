@@ -7,6 +7,7 @@ export type TableCellProps = {
   dim?: boolean;
   num?: boolean;
   className?: string;
+  title?: string;
   children: ReactNode;
 };
 
@@ -21,6 +22,7 @@ export function TableCell(props: TableCellProps) {
         props.num && "num",
         props.className,
       )}
+      title={props.title}
     >
       {props.children}
     </div>

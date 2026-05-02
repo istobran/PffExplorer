@@ -1,13 +1,15 @@
 import { css } from "@emotion/css";
+import clsx from "clsx";
 import type { ReactNode } from "react";
 
 export type PreviewBodyProps = {
+  compact?: boolean;
   children: ReactNode;
 };
 
 export function PreviewBody(props: PreviewBodyProps) {
   return (
-    <div id="preview-body" className={previewBodyClass}>
+    <div id="preview-body" className={clsx(previewBodyClass, props.compact && "compact")}>
       {props.children}
     </div>
   );
@@ -21,4 +23,10 @@ const previewBodyClass = css`
   line-height: 1.6;
   letter-spacing: 0.3px;
   color: var(--green);
+
+  &.compact {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 `;

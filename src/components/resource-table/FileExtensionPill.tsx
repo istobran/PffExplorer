@@ -1,21 +1,10 @@
-import { css } from "@emotion/css";
 import { fileExtensionLabel } from "@/lib/format";
+import { Tag } from "@/components/Tag";
 
 export type FileExtensionPillProps = {
   name: string;
 };
 
 export function FileExtensionPill(props: FileExtensionPillProps) {
-  return <span className={fileExtensionPillClass}>{fileExtensionLabel(props.name)}</span>;
+  return <Tag className="file-extension-pill">{fileExtensionLabel(props.name)}</Tag>;
 }
-
-const fileExtensionPillClass = css`
-  font-size: 9px;
-  padding: 0 5px;
-  height: 14px;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  color: var(--green-dim);
-  letter-spacing: 0.5px;
-`;

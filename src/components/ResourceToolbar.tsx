@@ -1,13 +1,18 @@
 import { css } from "@emotion/css";
 import { Download } from "lucide-react";
+import { FormatFilterDropdown } from "@/components/toolbar/FormatFilterDropdown";
 import { SearchBox } from "@/components/toolbar/SearchBox";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { ToolbarSeparator } from "@/components/toolbar/ToolbarSeparator";
 
 export type ResourceToolbarProps = {
   searchText: string;
+  formatOptions: string[];
+  selectedFormats: string[];
   hasSelection: boolean;
   onSearch: (value: string) => void;
+  onToggleFormat: (format: string) => void;
+  onClearFormats: () => void;
   onExport: () => void;
 };
 
@@ -16,6 +21,13 @@ export function ResourceToolbar(props: ResourceToolbarProps) {
     <div className={toolbarClass}>
       <span className="toolbar-label">FILTER:</span>
       <SearchBox value={props.searchText} onChange={props.onSearch} />
+      <ToolbarSeparator />
+      <FormatFilterDropdown
+        options={props.formatOptions}
+        selected={props.selectedFormats}
+        onToggle={props.onToggleFormat}
+        onClear={props.onClearFormats}
+      />
       <ToolbarSeparator />
       <ToolbarButton
         className="action"
@@ -39,8 +51,9 @@ const toolbarClass = css`
   gap: 8px;
   flex-shrink: 0;
   background: #040b04;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 
   .toolbar-label {
     font-size: 10px;

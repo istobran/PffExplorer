@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { fileExtensionLabel, formatBytes } from "@/lib/format";
+import { Tag } from "@/components/Tag";
 
 export type PreviewMetaProps = {
   entry: ResourceEntry;
@@ -10,11 +11,16 @@ export type PreviewMetaProps = {
 export function PreviewMeta(props: PreviewMetaProps) {
   return (
     <div className={previewMetaClass}>
-      <span>{formatBytes(props.preview.byteLen)}</span>
-      <span>{fileExtensionLabel(props.entry.name)}</span>
-      <span>
+      <Tag>{formatBytes(props.preview.byteLen)}</Tag>
+      <Tag>{fileExtensionLabel(props.entry.name)}</Tag>
+      <Tag>
         {props.preview.transforms.length ? props.preview.transforms.join(" + ") : "RAW"}
-      </span>
+      </Tag>
+      {props.preview.image && (
+        <Tag active>
+          {props.preview.image.width}x{props.preview.image.height}
+        </Tag>
+      )}
     </div>
   );
 }
@@ -26,12 +32,4 @@ const previewMetaClass = css`
   padding-bottom: 8px;
   margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
-
-  span {
-    font-size: 9px;
-    color: var(--green-dim);
-    border: 1px solid var(--border);
-    padding: 0 5px;
-    letter-spacing: 1px;
-  }
 `;

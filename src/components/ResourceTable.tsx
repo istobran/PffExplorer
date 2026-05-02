@@ -13,7 +13,7 @@ export type ResourceTableProps = {
   searchText: string;
   sortKey: SortKey;
   sortAsc: boolean;
-  showArchiveTag: boolean;
+  showArchiveColumn: boolean;
   onSort: (key: SortKey) => void;
   onSelect: (entry: ResourceEntry) => void;
 };
@@ -63,6 +63,7 @@ export function ResourceTable(props: ResourceTableProps) {
       <ResourceTableHeader
         sortKey={props.sortKey}
         sortAsc={props.sortAsc}
+        showArchiveColumn={props.showArchiveColumn}
         onSort={props.onSort}
       />
 
@@ -79,7 +80,7 @@ export function ResourceTable(props: ResourceTableProps) {
                   row={row}
                   selected={props.selectedKey === entryKey(row)}
                   searchText={props.searchText}
-                  showArchiveTag={props.showArchiveTag}
+                  showArchiveColumn={props.showArchiveColumn}
                   top={item.start}
                   onSelect={() => props.onSelect(row)}
                 />

@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { X } from "lucide-react";
 import type { MouseEvent } from "react";
 import type { LucideIcon } from "lucide-react";
+import { Tag } from "@/components/Tag";
 
 export type PackageTreeItemProps = {
   icon: LucideIcon;
@@ -31,7 +32,9 @@ export function PackageTreeItem(props: PackageTreeItemProps) {
       <button type="button" className="pff-main" onClick={props.onClick}>
         <Icon className="pff-icon" size={props.all ? 15 : 14} />
         <span className="pff-name">{props.label}</span>
-        <span className="pff-count">{props.count}</span>
+        <Tag className="pff-count" active={props.active}>
+          {props.count}
+        </Tag>
       </button>
       {props.onClose && (
         <button
@@ -73,7 +76,7 @@ const packageTreeItemClass = css`
 
   &:hover {
     background: rgba(57, 232, 57, 0.07);
-    color: var(--green-hi);
+    color: var(--hover-text);
   }
 
   &:hover::after {
@@ -84,6 +87,10 @@ const packageTreeItemClass = css`
     background: var(--sel-row);
     color: var(--green-hi);
     border-bottom-color: var(--border);
+  }
+
+  &.active:hover {
+    color: var(--hover-text);
   }
 
   &.active::after {
@@ -100,6 +107,12 @@ const packageTreeItemClass = css`
     color: var(--green-hi);
   }
 
+  &:hover .pff-icon,
+  &:hover .pff-name {
+    color: var(--hover-text);
+    text-shadow: var(--hover-text-glow);
+  }
+
   .pff-main {
     flex: 1;
     min-width: 0;
@@ -111,7 +124,7 @@ const packageTreeItemClass = css`
     background: transparent;
     color: inherit;
     border: none;
-    cursor: pointer;
+    cursor: var(--cursor-crosshair), crosshair;
     outline: none;
     text-align: left;
   }
@@ -137,12 +150,7 @@ const packageTreeItemClass = css`
   }
 
   .pff-count {
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 0.5px;
-    background: #0a1a0a;
-    border: 1px solid var(--border);
-    padding: 0 4px;
+    min-width: 24px;
   }
 
   .pff-close {
@@ -156,7 +164,7 @@ const packageTreeItemClass = css`
     color: var(--text-dim);
     border: none;
     border-left: 1px solid transparent;
-    cursor: pointer;
+    cursor: var(--cursor-crosshair), crosshair;
     opacity: 0.45;
     outline: none;
     transition: opacity 0.08s, color 0.08s, background 0.08s, border-color 0.08s;

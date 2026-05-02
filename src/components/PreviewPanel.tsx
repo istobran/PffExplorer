@@ -1,6 +1,7 @@
 import { FileArchive } from "lucide-react";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { BinaryPreview } from "@/components/preview/BinaryPreview";
+import { ImagePreviewDisplay } from "@/components/preview/ImagePreviewDisplay";
 import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
@@ -34,6 +35,19 @@ export function PreviewPanel(props: PreviewPanelProps) {
         <PreviewTextBlock
           text={props.preview.text}
           extension={ext}
+          animationKey={`${props.entry.archivePath}::${props.entry.tableIndex}`}
+        />
+      </PreviewBody>
+    );
+  }
+
+  if (props.preview.status === "image" && props.preview.image != null) {
+    return (
+      <PreviewBody compact>
+        <PreviewMeta entry={props.entry} preview={props.preview} />
+        <ImagePreviewDisplay
+          image={props.preview.image}
+          name={props.entry.name}
           animationKey={`${props.entry.archivePath}::${props.entry.tableIndex}`}
         />
       </PreviewBody>

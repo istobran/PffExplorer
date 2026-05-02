@@ -4,14 +4,17 @@ import type { ResourceTableRow } from "@/types";
 import { formatBytes, hex32 } from "@/lib/format";
 import { FileExtensionPill } from "@/components/resource-table/FileExtensionPill";
 import { HighlightedText } from "@/components/resource-table/HighlightedText";
-import { RESOURCE_TABLE_COLUMNS } from "@/components/resource-table/resourceTableLayout";
+import {
+  RESOURCE_TABLE_COLUMNS,
+  RESOURCE_TABLE_COLUMNS_WITH_ARCHIVE,
+} from "@/components/resource-table/resourceTableLayout";
 import { TableCell } from "@/components/resource-table/TableCell";
 
 export type ResourceTableRowItemProps = {
   row: ResourceTableRow;
   selected: boolean;
   searchText: string;
-  showArchiveTag: boolean;
+  showArchiveColumn: boolean;
   top: number;
   onSelect: () => void;
 };
@@ -20,7 +23,11 @@ export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
   return (
     <button
       type="button"
-      className={clsx(resourceTableRowItemClass, props.selected && "selected")}
+      className={clsx(
+        resourceTableRowItemClass,
+        props.selected && "selected",
+        props.showArchiveColumn && "with-archive-column",
+      )}
       style={{ transform: `translateY(${props.top}px)` }}
       onClick={props.onSelect}
       title={`${props.row.archiveName} / ${props.row.name}`}
@@ -30,8 +37,12 @@ export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
       </TableCell>
       <TableCell className="file-cell">
         <HighlightedText text={props.row.name} query={props.searchText} />
-        {props.showArchiveTag && <span className="src-tag">{props.row.archiveName}</span>}
       </TableCell>
+      {props.showArchiveColumn && (
+        <TableCell className="archive-cell" title={props.row.archiveName}>
+          {props.row.archiveName}
+        </TableCell>
+      )}
       <TableCell>
         <FileExtensionPill name={props.row.name} />
       </TableCell>
@@ -60,16 +71,21 @@ const resourceTableRowItemClass = css`
   border-bottom: 1px solid #0a1a0a;
   background: transparent;
   color: var(--green);
-  cursor: pointer;
+  cursor: var(--cursor-crosshair), crosshair;
   transition: background 0.06s;
   text-align: left;
+
+  &.with-archive-column {
+    grid-template-columns: ${RESOURCE_TABLE_COLUMNS_WITH_ARCHIVE};
+  }
 
   &:hover {
     background: var(--hover-row);
   }
 
   &:hover .td {
-    color: var(--green);
+    color: var(--hover-text);
+    text-shadow: var(--hover-text-glow);
   }
 
   &.selected {
@@ -80,18 +96,17 @@ const resourceTableRowItemClass = css`
     color: var(--green-hi);
   }
 
-  .file-cell {
-    gap: 4px;
+  &.selected:hover .td {
+    color: var(--hover-text);
   }
 
-  .src-tag {
-    font-size: 9px;
-    padding: 0 4px;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    margin-left: 4px;
-    flex-shrink: 0;
-    max-width: 90px;
+  .file-cell {
+    gap: 4px;
+    cursor: var(--cursor-crosshair), crosshair;
+  }
+
+  .archive-cell {
+    color: var(--green-dim);
     overflow: hidden;
     text-overflow: ellipsis;
   }

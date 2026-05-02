@@ -1,17 +1,24 @@
 import { css } from "@emotion/css";
+import clsx from "clsx";
 import type { SortKey } from "@/types";
 import { HeaderCell } from "@/components/resource-table/HeaderCell";
-import { RESOURCE_TABLE_COLUMNS } from "@/components/resource-table/resourceTableLayout";
+import {
+  RESOURCE_TABLE_COLUMNS,
+  RESOURCE_TABLE_COLUMNS_WITH_ARCHIVE,
+} from "@/components/resource-table/resourceTableLayout";
 
 export type ResourceTableHeaderProps = {
   sortKey: SortKey;
   sortAsc: boolean;
+  showArchiveColumn: boolean;
   onSort: (key: SortKey) => void;
 };
 
 export function ResourceTableHeader(props: ResourceTableHeaderProps) {
   return (
-    <div className={resourceTableHeaderClass}>
+    <div
+      className={clsx(resourceTableHeaderClass, props.showArchiveColumn && "with-archive-column")}
+    >
       <HeaderCell center onClick={() => props.onSort("archiveName")}>
         #
       </HeaderCell>
@@ -22,6 +29,15 @@ export function ResourceTableHeader(props: ResourceTableHeaderProps) {
       >
         FILENAME
       </HeaderCell>
+      {props.showArchiveColumn && (
+        <HeaderCell
+          active={props.sortKey === "archiveName"}
+          asc={props.sortAsc}
+          onClick={() => props.onSort("archiveName")}
+        >
+          PACKAGE
+        </HeaderCell>
+      )}
       <HeaderCell
         active={props.sortKey === "kind"}
         asc={props.sortAsc}
@@ -61,4 +77,8 @@ const resourceTableHeaderClass = css`
   background: #030a03;
   border-bottom: 2px solid var(--border-hi);
   flex-shrink: 0;
+
+  &.with-archive-column {
+    grid-template-columns: ${RESOURCE_TABLE_COLUMNS_WITH_ARCHIVE};
+  }
 `;

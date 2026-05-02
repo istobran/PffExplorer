@@ -33,7 +33,7 @@ const headerCellClass = css`
   border: none;
   border-right: 1px solid var(--border);
   background: transparent;
-  cursor: pointer;
+  cursor: var(--cursor-crosshair), crosshair;
   gap: 4px;
   transition: background 0.08s;
 
@@ -43,7 +43,8 @@ const headerCellClass = css`
 
   &:hover {
     background: rgba(57, 232, 57, 0.04);
-    color: var(--green-hi);
+    color: var(--hover-text);
+    text-shadow: var(--hover-text-glow);
   }
 
   &.center {
@@ -52,6 +53,10 @@ const headerCellClass = css`
 
   &.sorted {
     color: var(--green-hi);
+  }
+
+  &.sorted:hover {
+    color: var(--hover-text);
   }
 
   .th-arrow {
