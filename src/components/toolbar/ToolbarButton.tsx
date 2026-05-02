@@ -29,7 +29,7 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 
 export const toolbarButtonClass = css`
   background: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hi);
   color: var(--green-dim);
   font-size: 10px;
   letter-spacing: 1px;
@@ -65,13 +65,14 @@ export const toolbarButtonClass = css`
   }
 
   &:disabled {
-    opacity: 0.4;
+    opacity: 1;
+    color: var(--text-dim);
     cursor: default;
 
     &:hover {
       background: none;
-      border-color: var(--border);
-      color: var(--green-dim);
+      border-color: var(--border-hi);
+      color: var(--text-dim);
       font-weight: inherit;
     }
   }
