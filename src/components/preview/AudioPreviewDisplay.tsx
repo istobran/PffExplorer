@@ -4,6 +4,8 @@ import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-rea
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
 import { playUiHover, playUiPress } from "@/lib/sounds";
+import df1SliderTrack from "@/assets/images/df1-ui/hsld-211.png";
+import df1SliderThumb from "@/assets/images/df1-ui/slider.png";
 
 export type AudioPreviewDisplayProps = {
   audio: AudioPreview;
@@ -347,9 +349,45 @@ const audioPreviewDisplayClass = css`
   input[type="range"] {
     flex: 1;
     min-width: 0;
-    height: 12px;
+    height: 20px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
     accent-color: var(--green-sel);
     cursor: var(--cursor-crosshair), crosshair;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 20px;
+    background: url(${df1SliderTrack}) center / 100% 20px no-repeat;
+    image-rendering: pixelated;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 3px;
+    height: 19px;
+    margin-top: 0;
+    border: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: url(${df1SliderThumb}) center / 3px 19px no-repeat;
+    image-rendering: pixelated;
+  }
+
+  input[type="range"]::-moz-range-track {
+    height: 20px;
+    border: 0;
+    background: url(${df1SliderTrack}) center / 100% 20px no-repeat;
+    image-rendering: pixelated;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 3px;
+    height: 19px;
+    border: 0;
+    border-radius: 0;
+    background: url(${df1SliderThumb}) center / 3px 19px no-repeat;
+    image-rendering: pixelated;
   }
 
   .volume-row {

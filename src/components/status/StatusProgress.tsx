@@ -1,4 +1,5 @@
 import { css, keyframes } from "@emotion/css";
+import df1ProgressFrame from "@/assets/images/df1-ui/hsld-211.png";
 
 export type StatusProgressProps = {
   label: string;
@@ -46,26 +47,41 @@ const statusProgressClass = css`
   }
 
   .prog-outer {
-    width: 160px;
-    height: 8px;
+    position: relative;
+    width: min(211px, 28vw);
+    height: 20px;
     background: #030803;
-    border: 1px solid var(--border-hi);
     overflow: hidden;
   }
 
+  .prog-outer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: url(${df1ProgressFrame}) center / 100% 100% no-repeat;
+    image-rendering: pixelated;
+  }
+
   .prog-inner {
-    height: 100%;
+    position: absolute;
+    top: 5px;
+    left: 2px;
+    z-index: 0;
+    height: 10px;
+    max-width: calc(100% - 4px);
     width: 0%;
     background: repeating-linear-gradient(
       90deg,
       var(--green-sel) 0px,
-      var(--green-sel) 5px,
-      #004000 5px,
-      #004000 7px
+      var(--green-sel) 4px,
+      #004000 4px,
+      #004000 6px
     );
-    background-size: 7px 100%;
-    transition: width 0.4s ease;
-    animation: ${statusProgressScroll} 0.6s linear infinite;
+    background-size: 6px 100%;
+    box-shadow: 0 0 8px rgba(0, 252, 0, 0.32);
+    transition: width 0.24s linear;
+    animation: ${statusProgressScroll} 0.5s linear infinite;
   }
 
   .prog-pct {
