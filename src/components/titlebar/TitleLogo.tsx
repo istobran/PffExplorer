@@ -21,7 +21,7 @@ const titleLogoClass = css`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-left: 14px;
+  padding-left: 8px;
   border-left: 1px solid var(--border);
   flex-shrink: 0;
 
