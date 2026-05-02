@@ -253,7 +253,7 @@ const imagePreviewModeToggleClass = css`
 
   button:hover {
     color: var(--hover-text);
-    background: var(--hover-row);
+    background: var(--sel-row);
     font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
   }

@@ -45,7 +45,7 @@ const navButtonClass = css`
   transition: all 0.1s;
 
   &:hover {
-    background: var(--hover-row);
+    background: var(--sel-row);
     color: var(--hover-text);
     border-color: var(--green-sel);
     font-weight: var(--hover-text-weight);

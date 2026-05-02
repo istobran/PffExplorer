@@ -27,8 +27,8 @@ const tagClass = css`
   min-height: 16px;
   padding: 0 8px;
   background: #0a1a0a;
-  border: 1px solid var(--border-hi);
-  color: var(--green-dim);
+  border: 1px solid var(--green-sel);
+  color: var(--green-sel);
   font-size: 11px;
   line-height: 1;
   letter-spacing: 0.6px;
@@ -36,16 +36,16 @@ const tagClass = css`
   flex-shrink: 0;
 
   &:hover {
-    color: var(--green-dim);
+    color: var(--green-sel);
     text-shadow: none;
   }
 
   &.active {
-    color: var(--green);
+    color: var(--green-sel);
     border-color: var(--green-sel);
   }
 
   &.active:hover {
-    color: var(--green);
+    color: var(--green-sel);
   }
 `;

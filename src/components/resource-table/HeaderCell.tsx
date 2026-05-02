@@ -45,7 +45,7 @@ const headerCellClass = css`
   }
 
   &:hover {
-    background: rgba(57, 232, 57, 0.04);
+    background: var(--sel-row);
     color: var(--hover-text);
     font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
