@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
 import type { ReactNode } from "react";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type ToolbarButtonProps = {
   active?: boolean;
@@ -17,6 +18,8 @@ export function ToolbarButton(props: ToolbarButtonProps) {
       className={clsx(toolbarButtonClass, props.active && "on", props.className)}
       disabled={props.disabled}
       title={props.title}
+      onPointerEnter={props.disabled ? undefined : playUiHover}
+      onPointerDown={props.disabled ? undefined : playUiPress}
       onClick={props.onClick}
     >
       {props.children}

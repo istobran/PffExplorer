@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
 import type { ReactNode } from "react";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type HeaderCellProps = {
   children: ReactNode;
@@ -14,6 +15,8 @@ export function HeaderCell(props: HeaderCellProps) {
   return (
     <button
       className={clsx(headerCellClass, props.center && "center", props.active && "sorted")}
+      onPointerEnter={playUiHover}
+      onPointerDown={playUiPress}
       onClick={props.onClick}
     >
       <span>{props.children}</span>

@@ -1,5 +1,6 @@
 import { css } from "@emotion/css";
 import { Search } from "lucide-react";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type SearchBoxProps = {
   value: string;
@@ -14,6 +15,8 @@ export function SearchBox(props: SearchBoxProps) {
         type="text"
         placeholder="SEARCH FILES..."
         value={props.value}
+        onPointerEnter={playUiHover}
+        onPointerDown={playUiPress}
         onChange={(event) => props.onChange(event.currentTarget.value)}
       />
     </label>

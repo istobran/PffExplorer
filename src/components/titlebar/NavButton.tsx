@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type NavButtonProps = {
   icon: LucideIcon;
@@ -13,7 +14,13 @@ export function NavButton(props: NavButtonProps) {
   const Icon = props.icon;
 
   return (
-    <button className={navButtonClass} onClick={props.onClick} title={props.title}>
+    <button
+      className={navButtonClass}
+      onPointerEnter={playUiHover}
+      onPointerDown={playUiPress}
+      onClick={props.onClick}
+      title={props.title}
+    >
       <Icon size={14} />
       <span>{props.children}</span>
     </button>

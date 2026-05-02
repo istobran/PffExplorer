@@ -2,6 +2,7 @@ import { css } from "@emotion/css";
 import clsx from "clsx";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { playMissionSwitch, playUiHover, playUiPress } from "@/lib/sounds";
 
 export type FormatFilterDropdownProps = {
   options: string[];
@@ -48,6 +49,8 @@ export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
       <button
         type="button"
         className={clsx("format-filter-button", active && "active")}
+        onPointerEnter={props.options.length === 0 ? undefined : playUiHover}
+        onPointerDown={props.options.length === 0 ? undefined : playUiPress}
         onClick={() => setOpen((value) => !value)}
         disabled={props.options.length === 0}
       >
@@ -66,7 +69,12 @@ export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
                 key={format}
                 type="button"
                 className={clsx("format-option", selected && "selected")}
-                onClick={() => props.onToggle(format)}
+                onPointerEnter={playUiHover}
+                onPointerDown={playMissionSwitch}
+                onClick={(event) => {
+                  if (event.detail === 0) playMissionSwitch();
+                  props.onToggle(format);
+                }}
               >
                 <span className="format-check">{selected ? <Check size={12} /> : null}</span>
                 <span>{format}</span>
@@ -74,7 +82,16 @@ export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
             );
           })}
           <div className="format-separator" />
-          <button type="button" className="format-option all-option" onClick={props.onClear}>
+          <button
+            type="button"
+            className="format-option all-option"
+            onPointerEnter={playUiHover}
+            onPointerDown={playMissionSwitch}
+            onClick={(event) => {
+              if (event.detail === 0) playMissionSwitch();
+              props.onClear();
+            }}
+          >
             <span className="format-check">◈</span>
             <span>ALL TYPES</span>
           </button>

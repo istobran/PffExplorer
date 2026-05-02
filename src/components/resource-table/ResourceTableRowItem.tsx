@@ -9,6 +9,7 @@ import {
   RESOURCE_TABLE_COLUMNS_WITH_ARCHIVE,
 } from "@/components/resource-table/resourceTableLayout";
 import { TableCell } from "@/components/resource-table/TableCell";
+import { playUiHover } from "@/lib/sounds";
 
 export type ResourceTableRowItemProps = {
   row: ResourceTableRow;
@@ -29,6 +30,8 @@ export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
         props.showArchiveColumn && "with-archive-column",
       )}
       style={{ transform: `translateY(${props.top}px)` }}
+      data-menu-select-sound
+      onPointerEnter={playUiHover}
       onClick={props.onSelect}
       title={`${props.row.archiveName} / ${props.row.name}`}
     >

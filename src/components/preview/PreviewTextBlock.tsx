@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PreviewTextLine } from "@/components/preview/PreviewTextLine";
+import { playTypewriterClick, playTypewriterReturn } from "@/lib/sounds";
 
 const TYPEWRITER_CHARS_PER_SECOND = 200;
 const TYPEWRITER_LINE_STAGGER_MS = 20;
@@ -14,6 +15,7 @@ export type PreviewTextBlockProps = {
 
 export function PreviewTextBlock(props: PreviewTextBlockProps) {
   const blockRef = useRef<HTMLDivElement>(null);
+  const lastAudibleProgressRef = useRef({ chars: 0, lines: 0 });
   const [animatedLimit, setAnimatedLimit] = useState(FALLBACK_FIRST_SCREEN_CHARS);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [animationComplete, setAnimationComplete] = useState(false);
@@ -22,6 +24,9 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
   const animatedLines = useMemo(() => {
     return props.text.slice(0, targetChars).split("\n");
   }, [props.text, targetChars]);
+  const animatedLineLengths = useMemo(() => {
+    return animatedLines.map((line) => line.length);
+  }, [animatedLines]);
   const fullLines = useMemo(() => props.text.split("\n"), [props.text]);
   const animationDurationMs = useMemo(() => {
     return animatedLines.reduce((duration, line, index) => {
@@ -62,12 +67,14 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
 
     setElapsedMs(0);
     setAnimationComplete(false);
+    lastAudibleProgressRef.current = { chars: 0, lines: 0 };
 
     const startedAt = performance.now();
     let frameId = 0;
 
     function tick(now: number) {
       const nextElapsed = Math.min(now - startedAt, animationDurationMs);
+      emitTypewriterSounds(animatedLineLengths, nextElapsed, lastAudibleProgressRef.current);
       setElapsedMs(nextElapsed);
 
       if (nextElapsed < animationDurationMs) {
@@ -82,7 +89,7 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [animationDurationMs, props.animationKey, targetChars, totalChars]);
+  }, [animatedLineLengths, animationDurationMs, props.animationKey, targetChars, totalChars]);
 
   const visibleLines = animationComplete
     ? fullLines
@@ -124,6 +131,40 @@ function isLineTyping(line: string, lineIndex: number, elapsedMs: number) {
 
   const visibleChars = visibleCharsForLine(line, lineIndex, elapsedMs);
   return visibleChars > 0 && visibleChars < line.length;
+}
+
+function emitTypewriterSounds(
+  lineLengths: number[],
+  elapsedMs: number,
+  previous: { chars: number; lines: number },
+) {
+  const progress = { chars: 0, lines: 0 };
+
+  for (let index = 0; index < lineLengths.length; index += 1) {
+    const lineElapsed = elapsedMs - index * TYPEWRITER_LINE_STAGGER_MS;
+    if (lineElapsed <= 0) break;
+
+    const visibleChars = Math.min(
+      lineLengths[index],
+      Math.floor((lineElapsed / 1000) * TYPEWRITER_CHARS_PER_SECOND),
+    );
+
+    if (visibleChars > 0) {
+      progress.lines += 1;
+      progress.chars += visibleChars;
+    }
+  }
+
+  if (progress.lines > previous.lines && previous.lines > 0) {
+    playTypewriterReturn();
+  }
+
+  if (progress.chars > previous.chars) {
+    playTypewriterClick();
+  }
+
+  previous.chars = progress.chars;
+  previous.lines = progress.lines;
 }
 
 function measureFirstScreenCharLimit(

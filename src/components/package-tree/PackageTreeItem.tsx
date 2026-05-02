@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import type { MouseEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Tag } from "@/components/Tag";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type PackageTreeItemProps = {
   icon: LucideIcon;
@@ -29,7 +30,13 @@ export function PackageTreeItem(props: PackageTreeItemProps) {
       className={clsx(packageTreeItemClass, props.all && "all-node", props.active && "active")}
       title={props.title}
     >
-      <button type="button" className="pff-main" onClick={props.onClick}>
+      <button
+        type="button"
+        className="pff-main"
+        data-menu-select-sound
+        onPointerEnter={playUiHover}
+        onClick={props.onClick}
+      >
         <Icon className="pff-icon" size={props.all ? 15 : 14} />
         <span className="pff-name">{props.label}</span>
         <Tag className="pff-count" active={props.active}>
@@ -42,6 +49,8 @@ export function PackageTreeItem(props: PackageTreeItemProps) {
           className="pff-close"
           title={`Close ${props.label}`}
           aria-label={`Close ${props.label}`}
+          onPointerEnter={playUiHover}
+          onPointerDown={playUiPress}
           onClick={handleClose}
         >
           <X size={12} />

@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type WindowControlButtonProps = {
   icon: LucideIcon;
@@ -16,6 +17,8 @@ export function WindowControlButton(props: WindowControlButtonProps) {
     <button
       className={clsx(windowControlButtonClass, props.variant)}
       title={props.title}
+      onPointerEnter={playUiHover}
+      onPointerDown={playUiPress}
       onClick={props.onClick}
     >
       <Icon size={props.variant === "close" ? 15 : 14} />

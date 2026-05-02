@@ -21,6 +21,14 @@ import {
   entryKey,
   fileExtensionLabel,
 } from "@/lib/format";
+import {
+  DF1_MENU_SLIDE_DURATION_MS,
+  playMenuButton,
+  playUiPress,
+  playWhoosh,
+  preloadDf1MenuSounds,
+  startDf1MenuMusic,
+} from "@/lib/sounds";
 import type {
   AppConfig,
   ExportResult,
@@ -60,6 +68,7 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
   const [status, setStatus] = useState<StatusState>({
     label: "READY",
     target: "-",
@@ -70,6 +79,11 @@ function App() {
   useEffect(() => {
     void fitWindowToWorkArea();
     void restoreSavedWorkspace();
+  }, []);
+
+  useEffect(() => {
+    preloadDf1MenuSounds();
+    startDf1MenuMusic();
   }, []);
 
   const selectedEntry = useMemo(() => {
@@ -323,6 +337,12 @@ function App() {
   }
 
   function selectArchive(path: string | null) {
+    if (path !== activeArchivePath) {
+      playMenuButton();
+      playWhoosh();
+      setResourceFilesSlideKey((key) => key + 1);
+    }
+
     setActiveArchivePath(path);
     setSelectedKey(null);
     setPreview(null);
@@ -344,7 +364,18 @@ function App() {
   }
 
   function selectResource(nextKey: string) {
-    setSelectedKey((current) => (current === nextKey ? null : nextKey));
+    if (selectedKey !== nextKey) {
+      if (selectedKey === null) {
+        playMenuButton();
+        playWhoosh();
+      } else {
+        playUiPress();
+      }
+
+      setSelectedKey(nextKey);
+    } else {
+      setSelectedKey(null);
+    }
   }
 
   function toggleFormat(format: string) {
@@ -437,26 +468,30 @@ function App() {
 
         <div className={rightColumnClass}>
           <Panel id="table-panel" title="RESOURCE FILES" sub={`${visibleRows.length} FILES`}>
-            <ResourceToolbar
-              searchText={searchText}
-              formatOptions={availableFormats}
-              selectedFormats={selectedFormats}
-              hasSelection={Boolean(selectedEntry)}
-              onSearch={setSearchText}
-              onToggleFormat={toggleFormat}
-              onClearFormats={clearFormats}
-              onExport={exportSelected}
-            />
-            <ResourceTable
-              rows={visibleRows}
-              selectedKey={selectedKey}
-              searchText={searchText}
-              sortKey={sortKey}
-              sortAsc={sortAsc}
-              showArchiveColumn={activeArchivePath === null}
-              onSort={changeSort}
-              onSelect={(entry) => selectResource(entryKey(entry))}
-            />
+            <div key={resourceFilesSlideKey} className={df1HorizontalWipeClass}>
+              <div className="df1-wipe-content">
+                <ResourceToolbar
+                  searchText={searchText}
+                  formatOptions={availableFormats}
+                  selectedFormats={selectedFormats}
+                  hasSelection={Boolean(selectedEntry)}
+                  onSearch={setSearchText}
+                  onToggleFormat={toggleFormat}
+                  onClearFormats={clearFormats}
+                  onExport={exportSelected}
+                />
+                <ResourceTable
+                  rows={visibleRows}
+                  selectedKey={selectedKey}
+                  searchText={searchText}
+                  sortKey={sortKey}
+                  sortAsc={sortAsc}
+                  showArchiveColumn={activeArchivePath === null}
+                  onSort={changeSort}
+                  onSelect={(entry) => selectResource(entryKey(entry))}
+                />
+              </div>
+            </div>
           </Panel>
 
           {selectedEntry && (
@@ -570,11 +605,193 @@ const rightColumnClass = css`
   #preview-panel {
     width: 550px;
     flex-shrink: 0;
+    animation: df1-preview-panel-reveal ${DF1_MENU_SLIDE_DURATION_MS}ms linear both;
+    will-change: clip-path;
+  }
+
+  #preview-panel::after {
+    content: "";
+    position: absolute;
+    top: 26px;
+    bottom: 0;
+    left: -84px;
+    width: 84px;
+    z-index: 5;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(120, 255, 120, 0.18) 0,
+        rgba(120, 255, 120, 0.18) 1px,
+        rgba(0, 0, 0, 0.12) 1px,
+        rgba(0, 0, 0, 0.12) 3px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0),
+        rgba(57, 232, 57, 0.14) 18%,
+        rgba(127, 255, 127, 0.28) 52%,
+        rgba(57, 232, 57, 0.12) 82%,
+        rgba(0, 0, 0, 0)
+      );
+    border-right: 1px solid rgba(127, 255, 127, 0.38);
+    box-shadow: 0 0 18px rgba(57, 232, 57, 0.18);
+    animation: df1-preview-panel-sweep ${DF1_MENU_SLIDE_DURATION_MS}ms linear both;
+  }
+
+  @keyframes df1-preview-panel-reveal {
+    0% {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    100% {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes df1-preview-panel-sweep {
+    0% {
+      left: -84px;
+    }
+
+    100% {
+      left: 100%;
+    }
   }
 
   @media (max-width: 1100px) {
     #preview-panel {
       width: 550px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #preview-panel {
+      animation: none;
+      clip-path: none;
+    }
+
+    #preview-panel::after {
+      display: none;
+    }
+  }
+`;
+
+const df1HorizontalWipeClass = css`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--panel-bg);
+  contain: paint;
+
+  .df1-wipe-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    animation: df1-menu-reveal ${DF1_MENU_SLIDE_DURATION_MS}ms linear both;
+    will-change: clip-path;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -84px;
+    width: 84px;
+    z-index: 4;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(120, 255, 120, 0.18) 0,
+        rgba(120, 255, 120, 0.18) 1px,
+        rgba(0, 0, 0, 0.12) 1px,
+        rgba(0, 0, 0, 0.12) 3px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0),
+        rgba(57, 232, 57, 0.14) 18%,
+        rgba(127, 255, 127, 0.28) 52%,
+        rgba(57, 232, 57, 0.12) 82%,
+        rgba(0, 0, 0, 0)
+      );
+    border-left: 1px solid rgba(127, 255, 127, 0.16);
+    border-right: 1px solid rgba(127, 255, 127, 0.38);
+    box-shadow:
+      0 0 18px rgba(57, 232, 57, 0.18),
+      inset 0 0 18px rgba(127, 255, 127, 0.08);
+    animation: df1-menu-sweep ${DF1_MENU_SLIDE_DURATION_MS}ms linear both;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0) 26%),
+      repeating-linear-gradient(
+        0deg,
+        rgba(127, 255, 127, 0.04) 0,
+        rgba(127, 255, 127, 0.04) 1px,
+        rgba(0, 0, 0, 0) 1px,
+        rgba(0, 0, 0, 0) 4px
+      );
+    animation: df1-menu-overlay ${DF1_MENU_SLIDE_DURATION_MS}ms linear both;
+  }
+
+  @keyframes df1-menu-reveal {
+    0% {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    100% {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes df1-menu-sweep {
+    0% {
+      left: -84px;
+    }
+
+    100% {
+      left: 100%;
+    }
+  }
+
+  @keyframes df1-menu-overlay {
+    0%,
+    70% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .df1-wipe-content,
+    &::before,
+    &::after {
+      animation: none;
+    }
+
+    .df1-wipe-content {
+      clip-path: none;
+    }
+
+    &::before,
+    &::after {
+      display: none;
     }
   }
 `;

@@ -6,7 +6,7 @@ import type { ImagePreview } from "@/types";
 const RADAR_STEPS = 8;
 const RADAR_STEP_DELAY_MS = 20;
 const RADAR_BOX_ANIMATION_MS = 160;
-const RADAR_ANIMATION_MS = (RADAR_STEPS - 1) * RADAR_STEP_DELAY_MS + RADAR_BOX_ANIMATION_MS + 380;
+const RADAR_ANIMATION_MS = (RADAR_STEPS - 1) * RADAR_STEP_DELAY_MS + RADAR_BOX_ANIMATION_MS + 20;
 
 export type ImagePreviewDisplayProps = {
   image: ImagePreview;
