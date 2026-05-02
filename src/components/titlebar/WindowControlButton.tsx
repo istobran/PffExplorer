@@ -40,11 +40,17 @@ const windowControlButtonClass = css`
   transition: all 0.08s;
 
   &:hover {
-    background: var(--sel-row);
+    background: var(--hover-row);
     color: var(--hover-text);
     border-color: var(--green-sel);
     font-weight: var(--hover-text-weight);
     box-shadow: none;
     text-shadow: var(--hover-text-glow);
+  }
+
+  &.close:hover {
+    background: rgba(200, 40, 40, 0.18);
+    color: #ff5555;
+    border-color: #aa2222;
   }
 `;

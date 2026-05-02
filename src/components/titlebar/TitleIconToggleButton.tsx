@@ -51,7 +51,7 @@ const titleIconToggleButtonClass = css`
   flex-shrink: 0;
 
   &:hover {
-    background: var(--sel-row);
+    background: var(--hover-row);
     color: var(--hover-text);
     border-color: var(--green-sel);
     box-shadow: none;
@@ -71,6 +71,6 @@ const titleIconToggleButtonClass = css`
   &.danger:hover {
     color: var(--hover-text);
     border-color: var(--green-sel);
-    background: var(--sel-row);
+    background: var(--hover-row);
   }
 `;
