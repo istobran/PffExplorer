@@ -1,12 +1,15 @@
 import { css } from "@emotion/css";
 import { FileArchive, FolderOpen, Minus, X } from "lucide-react";
 import { NavButton } from "@/components/titlebar/NavButton";
+import { SoundToggleButton } from "@/components/titlebar/SoundToggleButton";
 import { TitleLogo } from "@/components/titlebar/TitleLogo";
 import { WindowControlButton } from "@/components/titlebar/WindowControlButton";
 
 export type TitleBarProps = {
+  soundMuted: boolean;
   onOpenProject: () => void;
   onOpenFile: () => void;
+  onToggleSoundMuted: () => void;
   onMinimize: () => void;
   onClose: () => void;
 };
@@ -24,6 +27,7 @@ export function TitleBar(props: TitleBarProps) {
         <div className="nav-title">PFF RESOURCE EXPLORER</div>
       </div>
       <TitleLogo />
+      <SoundToggleButton muted={props.soundMuted} onToggle={props.onToggleSoundMuted} />
       <div className="win-controls">
         <WindowControlButton icon={Minus} title="Minimize" onClick={props.onMinimize} />
         <WindowControlButton icon={X} title="Close" variant="close" onClick={props.onClose} />

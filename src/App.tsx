@@ -23,10 +23,12 @@ import {
 } from "@/lib/format";
 import {
   DF1_MENU_SLIDE_DURATION_MS,
+  isSoundMuted,
   playMenuButton,
   playUiPress,
   playWhoosh,
   preloadDf1MenuSounds,
+  setSoundMuted,
   startDf1MenuMusic,
 } from "@/lib/sounds";
 import type {
@@ -69,6 +71,7 @@ function App() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
+  const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
   const [status, setStatus] = useState<StatusState>({
     label: "READY",
     target: "-",
@@ -463,11 +466,25 @@ function App() {
     await runWindowAction(() => getCurrentWindow().close());
   }
 
+  function toggleSoundMuted() {
+    const nextMuted = !soundMuted;
+    setSoundMuted(nextMuted);
+    setSoundMutedState(nextMuted);
+    setStatus({
+      label: nextMuted ? "MUTED" : "AUDIO ON",
+      target: "SOUND",
+      progressLabel: "IDLE",
+      progress: null,
+    });
+  }
+
   return (
     <main className={appShellClass}>
       <TitleBar
+        soundMuted={soundMuted}
         onOpenProject={openProject}
         onOpenFile={openFile}
+        onToggleSoundMuted={toggleSoundMuted}
         onMinimize={minimizeWindow}
         onClose={closeWindow}
       />

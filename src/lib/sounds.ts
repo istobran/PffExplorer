@@ -53,6 +53,7 @@ let audioContext: AudioContext | null = null;
 let menuMusicAudio: HTMLAudioElement | null = null;
 let menuMusicUnlockListenersInstalled = false;
 let preloadStarted = false;
+let soundMuted = false;
 
 export function preloadDf1MenuSounds() {
   if (preloadStarted || typeof window === "undefined") return;
@@ -81,6 +82,7 @@ export function playMenuButton() {
 
 export function startDf1MenuMusic() {
   if (typeof window === "undefined") return;
+  if (soundMuted) return;
 
   const audio = getMenuMusicAudio();
   if (!audio.paused) return;
@@ -93,6 +95,20 @@ export function startDf1MenuMusic() {
 export function stopDf1MenuMusic() {
   if (!menuMusicAudio) return;
   menuMusicAudio.pause();
+}
+
+export function isSoundMuted() {
+  return soundMuted;
+}
+
+export function setSoundMuted(muted: boolean) {
+  soundMuted = muted;
+
+  if (soundMuted) {
+    stopDf1MenuMusic();
+  } else {
+    startDf1MenuMusic();
+  }
 }
 
 export function playWhoosh() {
@@ -197,6 +213,7 @@ function playSound(
   },
 ) {
   if (typeof window === "undefined") return;
+  if (soundMuted) return;
 
   const now = performance.now();
   const last = lastPlayedAt.get(options.key) ?? 0;
