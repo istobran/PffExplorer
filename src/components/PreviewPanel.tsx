@@ -1,6 +1,6 @@
 import { css } from "@emotion/css";
 import { FileArchive } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { BinaryPreview } from "@/components/preview/BinaryPreview";
 import {
@@ -21,6 +21,28 @@ export type PreviewPanelProps = {
 
 export function PreviewPanel(props: PreviewPanelProps) {
   const [nightVision, setNightVision] = useState(true);
+  const imagePreviewActive =
+    !props.loading && props.preview?.status === "image" && props.preview.image != null;
+
+  useEffect(() => {
+    if (!imagePreviewActive) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key.toLowerCase() !== "n") return;
+      if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableShortcutTarget(event.target)) return;
+
+      event.preventDefault();
+      playMissionBriefingSelect();
+      setNightVision((current) => !current);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [imagePreviewActive]);
 
   if (!props.entry) {
     return <PreviewEmptyState icon={FileArchive} message="SELECT A RESOURCE TO PREVIEW" />;
@@ -133,6 +155,18 @@ function isPreviewableTextName(name: string) {
 function matchesExtension(name: string, ...extensions: string[]) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   return extensions.includes(ext);
+}
+
+function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+
+  const tagName = target.tagName.toLowerCase();
+  return (
+    target.isContentEditable ||
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select"
+  );
 }
 
 type ImagePreviewModeToggleProps = {
