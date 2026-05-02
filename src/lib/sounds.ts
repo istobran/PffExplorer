@@ -127,6 +127,13 @@ export function playTypewriterClick() {
   });
 }
 
+export function playTypewriterInput() {
+  playSound(randomItem(TYPEWRITER_CLICK_URLS), {
+    key: "typewriter-input",
+    volume: 0.22,
+  });
+}
+
 export function playTypewriterReturn() {
   playSound(randomItem(TYPEWRITER_RETURN_URLS), {
     key: "typewriter-return",

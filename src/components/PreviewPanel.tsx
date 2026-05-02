@@ -1,11 +1,14 @@
 import { FileArchive } from "lucide-react";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { BinaryPreview } from "@/components/preview/BinaryPreview";
-import { ImagePreviewDisplay } from "@/components/preview/ImagePreviewDisplay";
+import {
+  ImagePreviewDisplay,
+  ImagePreviewLoadingBox,
+} from "@/components/preview/ImagePreviewDisplay";
 import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
-import { PreviewTextBlock } from "@/components/preview/PreviewTextBlock";
+import { PreviewTextBlock, PreviewTextLoading } from "@/components/preview/PreviewTextBlock";
 
 export type PreviewPanelProps = {
   entry: ResourceEntry | null;
@@ -19,6 +22,22 @@ export function PreviewPanel(props: PreviewPanelProps) {
   }
 
   if (props.loading) {
+    if (isPreviewableImageName(props.entry.name)) {
+      return (
+        <PreviewBody compact>
+          <ImagePreviewLoadingBox />
+        </PreviewBody>
+      );
+    }
+
+    if (isPreviewableTextName(props.entry.name)) {
+      return (
+        <PreviewBody>
+          <PreviewTextLoading message="正在加载文本预览..." />
+        </PreviewBody>
+      );
+    }
+
     return <PreviewEmptyState loading message="DECODING PREVIEW" />;
   }
 
@@ -63,4 +82,46 @@ export function PreviewPanel(props: PreviewPanelProps) {
       />
     </PreviewBody>
   );
+}
+
+function isPreviewableImageName(name: string) {
+  return matchesExtension(
+    name,
+    "pcx",
+    "tga",
+    "dds",
+    "bmp",
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "tif",
+    "tiff",
+    "mdt",
+  );
+}
+
+function isPreviewableTextName(name: string) {
+  return matchesExtension(
+    name,
+    "lua",
+    "xml",
+    "cfg",
+    "ini",
+    "txt",
+    "def",
+    "adm",
+    "lst",
+    "fx",
+    "vsh",
+    "psh",
+    "json",
+    "csv",
+    "toml",
+  );
+}
+
+function matchesExtension(name: string, ...extensions: string[]) {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return extensions.includes(ext);
 }

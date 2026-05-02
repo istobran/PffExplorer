@@ -1,10 +1,12 @@
+use std::collections::hash_map::DefaultHasher;
 use std::fs::{self, File};
+use std::hash::{Hash, Hasher};
 use std::io::{self, Cursor, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-use base64::Engine;
 use flate2::read::{DeflateDecoder, ZlibDecoder};
 use serde::{Deserialize, Serialize};
+use tauri::Manager;
 use thiserror::Error;
 use walkdir::WalkDir;
 
@@ -137,7 +139,8 @@ pub enum PreviewStatus {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImagePreview {
-    pub data_url: String,
+    pub data_url: Option<String>,
+    pub file_path: Option<String>,
     pub width: u32,
     pub height: u32,
     pub format: String,
@@ -224,14 +227,38 @@ pub fn scan_pff_project(path: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub fn preview_entry(archive_path: String, entry_index: u32) -> Result<PreviewResponse, String> {
-    let archive = PffArchive::open(archive_path).map_err(command_error)?;
-    let entry = archive
-        .entry_by_index(entry_index)
-        .ok_or_else(|| command_error(PffError::EntryNotFound(entry_index)))?;
-    let ExtractedData { data, transforms } =
-        archive.extract_decoded(entry).map_err(command_error)?;
-    Ok(preview_from_bytes(entry, data, transforms))
+pub async fn preview_entry(
+    app: tauri::AppHandle,
+    archive_path: String,
+    entry_index: u32,
+) -> Result<PreviewResponse, String> {
+    let preview_cache_dir = app
+        .path()
+        .app_cache_dir()
+        .map_err(|error| format!("preview cache path failed: {error}"))?
+        .join("previews");
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let archive = PffArchive::open(archive_path).map_err(command_error)?;
+        let entry = archive
+            .entry_by_index(entry_index)
+            .ok_or_else(|| command_error(PffError::EntryNotFound(entry_index)))?;
+        let ExtractedData { data, transforms } =
+            archive.extract_decoded(entry).map_err(command_error)?;
+
+        fs::create_dir_all(&preview_cache_dir)
+            .map_err(PffError::from)
+            .map_err(command_error)?;
+        Ok(preview_from_bytes(
+            &archive.path,
+            entry,
+            data,
+            transforms,
+            Some(&preview_cache_dir),
+        ))
+    })
+    .await
+    .map_err(|error| format!("preview worker failed: {error}"))?
 }
 
 #[tauri::command]
@@ -544,12 +571,20 @@ struct ExtractedData {
     transforms: Vec<String>,
 }
 
-fn preview_from_bytes(entry: &PffEntry, data: Vec<u8>, transforms: Vec<String>) -> PreviewResponse {
+fn preview_from_bytes(
+    archive_path: &Path,
+    entry: &PffEntry,
+    data: Vec<u8>,
+    transforms: Vec<String>,
+    preview_cache_dir: Option<&Path>,
+) -> PreviewResponse {
     let byte_len = data.len();
     let hex_head = hex_head(&data, 96);
 
     if is_previewable_image(&entry.name) {
-        match image_preview_from_bytes(&entry.name, &data) {
+        let cache_key = preview_cache_key(archive_path, entry, byte_len);
+        match image_preview_from_bytes_with_cache(&entry.name, &data, preview_cache_dir, &cache_key)
+        {
             Ok(image) => {
                 let image_format = image.format.clone();
                 let mut transforms = transforms;
@@ -618,7 +653,17 @@ fn preview_from_bytes(entry: &PffEntry, data: Vec<u8>, transforms: Vec<String>) 
     }
 }
 
+#[cfg(test)]
 fn image_preview_from_bytes(name: &str, data: &[u8]) -> Result<ImagePreview, PffError> {
+    image_preview_from_bytes_with_cache(name, data, None, "")
+}
+
+fn image_preview_from_bytes_with_cache(
+    name: &str,
+    data: &[u8],
+    preview_cache_dir: Option<&Path>,
+    cache_key: &str,
+) -> Result<ImagePreview, PffError> {
     let (rgba, format) = decode_image_rgba(name, data)?;
     let width = rgba.width();
     let height = rgba.height();
@@ -638,15 +683,46 @@ fn image_preview_from_bytes(name: &str, data: &[u8]) -> Result<ImagePreview, Pff
             message: error.to_string(),
         })?;
 
-    Ok(ImagePreview {
-        data_url: format!(
+    if let Some(preview_cache_dir) = preview_cache_dir {
+        let preview_path = preview_cache_dir.join(format!("{cache_key}.png"));
+        fs::write(&preview_path, &png)?;
+
+        return Ok(ImagePreview {
+            data_url: None,
+            file_path: Some(preview_path.to_string_lossy().into_owned()),
+            width,
+            height,
+            format,
+        });
+    }
+
+    let data_url = {
+        use base64::Engine as _;
+        format!(
             "data:image/png;base64,{}",
             base64::engine::general_purpose::STANDARD.encode(png)
-        ),
+        )
+    };
+
+    Ok(ImagePreview {
+        data_url: Some(data_url),
+        file_path: None,
         width,
         height,
         format,
     })
+}
+
+fn preview_cache_key(archive_path: &Path, entry: &PffEntry, byte_len: usize) -> String {
+    let mut hasher = DefaultHasher::new();
+    archive_path.to_string_lossy().hash(&mut hasher);
+    entry.table_index.hash(&mut hasher);
+    entry.offset.hash(&mut hasher);
+    entry.size.hash(&mut hasher);
+    entry.timestamp.hash(&mut hasher);
+    entry.checksum.hash(&mut hasher);
+    byte_len.hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
 }
 
 fn decode_image_rgba(name: &str, data: &[u8]) -> Result<(image::RgbaImage, String), PffError> {
@@ -1084,7 +1160,11 @@ mod tests {
                 Ok(preview) => {
                     assert!(preview.width > 0);
                     assert!(preview.height > 0);
-                    assert!(preview.data_url.starts_with("data:image/png;base64,"));
+                    assert!(preview.file_path.is_none());
+                    assert!(preview
+                        .data_url
+                        .as_deref()
+                        .is_some_and(|url| url.starts_with("data:image/png;base64,")));
                     return;
                 }
                 Err(error) => failures.push(format!("{}: {error}", entry.name)),

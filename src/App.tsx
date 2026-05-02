@@ -133,35 +133,45 @@ function App() {
     }
 
     let cancelled = false;
+    let frameId = 0;
+    let timerId = 0;
     setPreview(null);
     setPreviewLoading(true);
 
-    invoke<PreviewResponse>("preview_entry", {
-      archivePath: selectedEntry.archivePath,
-      entryIndex: selectedEntry.tableIndex,
-    })
-      .then((response) => {
-        if (!cancelled) setPreview(response);
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setPreview({
-            status: "binary",
-            text: null,
-            image: null,
-            hexHead: "",
-            byteLen: selectedEntry.size,
-            transforms: [],
-            message: String(error),
+    frameId = window.requestAnimationFrame(() => {
+      timerId = window.setTimeout(() => {
+        if (cancelled) return;
+
+        invoke<PreviewResponse>("preview_entry", {
+          archivePath: selectedEntry.archivePath,
+          entryIndex: selectedEntry.tableIndex,
+        })
+          .then((response) => {
+            if (!cancelled) setPreview(response);
+          })
+          .catch((error) => {
+            if (!cancelled) {
+              setPreview({
+                status: "binary",
+                text: null,
+                image: null,
+                hexHead: "",
+                byteLen: selectedEntry.size,
+                transforms: [],
+                message: String(error),
+              });
+            }
+          })
+          .finally(() => {
+            if (!cancelled) setPreviewLoading(false);
           });
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setPreviewLoading(false);
-      });
+      }, 0);
+    });
 
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timerId);
     };
   }, [selectedEntry]);
 
@@ -346,6 +356,7 @@ function App() {
     setActiveArchivePath(path);
     setSelectedKey(null);
     setPreview(null);
+    setPreviewLoading(false);
     setStatus({
       label: "LOADED",
       target: path ? basename(path).toUpperCase() : "ALL PACKAGES",
@@ -372,9 +383,13 @@ function App() {
         playUiPress();
       }
 
+      setPreview(null);
+      setPreviewLoading(true);
       setSelectedKey(nextKey);
     } else {
       setSelectedKey(null);
+      setPreview(null);
+      setPreviewLoading(false);
     }
   }
 
@@ -388,12 +403,14 @@ function App() {
     });
     setSelectedKey(null);
     setPreview(null);
+    setPreviewLoading(false);
   }
 
   function clearFormats() {
     setSelectedFormats([]);
     setSelectedKey(null);
     setPreview(null);
+    setPreviewLoading(false);
   }
 
   async function exportSelected() {

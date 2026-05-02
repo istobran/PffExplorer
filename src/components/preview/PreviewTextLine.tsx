@@ -1,4 +1,5 @@
 import { css } from "@emotion/css";
+import { memo } from "react";
 import { syntaxHighlight } from "@/lib/previewSyntax";
 
 export type PreviewTextLineProps = {
@@ -8,7 +9,7 @@ export type PreviewTextLineProps = {
   cursor?: boolean;
 };
 
-export function PreviewTextLine(props: PreviewTextLineProps) {
+export const PreviewTextLine = memo(function PreviewTextLine(props: PreviewTextLineProps) {
   return (
     <div className={previewTextLineClass}>
       <span className="preview-line-num">{String(props.lineNumber).padStart(3, " ")}</span>
@@ -20,7 +21,7 @@ export function PreviewTextLine(props: PreviewTextLineProps) {
       {props.cursor && <span className="preview-cursor" />}
     </div>
   );
-}
+});
 
 const previewTextLineClass = css`
   white-space: pre-wrap;

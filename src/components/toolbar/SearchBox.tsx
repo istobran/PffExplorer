@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import { Search } from "lucide-react";
-import { playUiHover, playUiPress } from "@/lib/sounds";
+import type { FormEvent } from "react";
+import { playTypewriterInput, playUiHover, playUiPress } from "@/lib/sounds";
 
 export type SearchBoxProps = {
   value: string;
@@ -8,6 +9,20 @@ export type SearchBoxProps = {
 };
 
 export function SearchBox(props: SearchBoxProps) {
+  function handleInput(event: FormEvent<HTMLInputElement>) {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (!nativeEvent.inputType?.startsWith("insert")) return;
+
+    const insertedText = nativeEvent.data ?? "";
+    const clickCount = nativeEvent.inputType === "insertFromPaste"
+      ? 1
+      : Math.max(1, Array.from(insertedText).length);
+
+    for (let index = 0; index < clickCount; index += 1) {
+      playTypewriterInput();
+    }
+  }
+
   return (
     <label className={searchBoxClass}>
       <Search className="search-icon" size={12} />
@@ -17,6 +32,7 @@ export function SearchBox(props: SearchBoxProps) {
         value={props.value}
         onPointerEnter={playUiHover}
         onPointerDown={playUiPress}
+        onInput={handleInput}
         onChange={(event) => props.onChange(event.currentTarget.value)}
       />
     </label>

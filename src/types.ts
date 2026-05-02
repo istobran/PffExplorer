@@ -52,7 +52,8 @@ export type PreviewResponse = {
 };
 
 export type ImagePreview = {
-  dataUrl: string;
+  dataUrl: string | null;
+  filePath: string | null;
   width: number;
   height: number;
   format: string;
