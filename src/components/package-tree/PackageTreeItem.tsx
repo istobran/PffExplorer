@@ -165,7 +165,7 @@ const packageTreeItemClass = css`
   .pff-close {
     width: 24px;
     height: 100%;
-    display: inline-flex;
+    display: none;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
@@ -174,17 +174,14 @@ const packageTreeItemClass = css`
     border: none;
     border-left: 1px solid transparent;
     cursor: var(--cursor-crosshair), crosshair;
-    opacity: 0;
     outline: none;
-    pointer-events: none;
     transition: opacity 0.08s, color 0.08s, background 0.08s, border-color 0.08s;
   }
 
   &:hover .pff-close,
   &:focus-within .pff-close,
   .pff-close:focus-visible {
-    opacity: 1;
-    pointer-events: auto;
+    display: inline-flex;
   }
 
   .pff-close:hover {
