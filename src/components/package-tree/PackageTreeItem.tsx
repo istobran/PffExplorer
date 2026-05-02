@@ -174,18 +174,17 @@ const packageTreeItemClass = css`
     border: none;
     border-left: 1px solid transparent;
     cursor: var(--cursor-crosshair), crosshair;
-    opacity: 0.45;
+    opacity: 0;
     outline: none;
+    pointer-events: none;
     transition: opacity 0.08s, color 0.08s, background 0.08s, border-color 0.08s;
   }
 
-  &.active .pff-close {
-    opacity: 0.7;
-  }
-
   &:hover .pff-close,
+  &:focus-within .pff-close,
   .pff-close:focus-visible {
     opacity: 1;
+    pointer-events: auto;
   }
 
   .pff-close:hover {
