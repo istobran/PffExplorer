@@ -23,11 +23,13 @@ import {
 } from "@/lib/format";
 import {
   DF1_MENU_SLIDE_DURATION_MS,
+  isBackgroundMusicEnabled,
   isSoundMuted,
   playMenuButton,
   playUiPress,
   playWhoosh,
   preloadDf1MenuSounds,
+  setBackgroundMusicEnabled,
   setSoundMuted,
   startDf1MenuMusic,
 } from "@/lib/sounds";
@@ -72,6 +74,9 @@ function App() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
   const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
+  const [backgroundMusicEnabled, setBackgroundMusicEnabledState] = useState(() =>
+    isBackgroundMusicEnabled(),
+  );
   const [status, setStatus] = useState<StatusState>({
     label: "READY",
     target: "-",
@@ -478,13 +483,27 @@ function App() {
     });
   }
 
+  function toggleBackgroundMusic() {
+    const nextEnabled = !backgroundMusicEnabled;
+    setBackgroundMusicEnabled(nextEnabled);
+    setBackgroundMusicEnabledState(nextEnabled);
+    setStatus({
+      label: nextEnabled ? "MUSIC ON" : "MUSIC OFF",
+      target: "BGM",
+      progressLabel: "IDLE",
+      progress: null,
+    });
+  }
+
   return (
     <main className={appShellClass}>
       <TitleBar
         soundMuted={soundMuted}
+        backgroundMusicEnabled={backgroundMusicEnabled}
         onOpenProject={openProject}
         onOpenFile={openFile}
         onToggleSoundMuted={toggleSoundMuted}
+        onToggleBackgroundMusic={toggleBackgroundMusic}
         onMinimize={minimizeWindow}
         onClose={closeWindow}
       />

@@ -54,6 +54,7 @@ let menuMusicAudio: HTMLAudioElement | null = null;
 let menuMusicUnlockListenersInstalled = false;
 let preloadStarted = false;
 let soundMuted = false;
+let backgroundMusicEnabled = true;
 
 export function preloadDf1MenuSounds() {
   if (preloadStarted || typeof window === "undefined") return;
@@ -83,6 +84,7 @@ export function playMenuButton() {
 export function startDf1MenuMusic() {
   if (typeof window === "undefined") return;
   if (soundMuted) return;
+  if (!backgroundMusicEnabled) return;
 
   const audio = getMenuMusicAudio();
   if (!audio.paused) return;
@@ -101,6 +103,10 @@ export function isSoundMuted() {
   return soundMuted;
 }
 
+export function isBackgroundMusicEnabled() {
+  return backgroundMusicEnabled;
+}
+
 export function setSoundMuted(muted: boolean) {
   soundMuted = muted;
 
@@ -108,6 +114,16 @@ export function setSoundMuted(muted: boolean) {
     stopDf1MenuMusic();
   } else {
     startDf1MenuMusic();
+  }
+}
+
+export function setBackgroundMusicEnabled(enabled: boolean) {
+  backgroundMusicEnabled = enabled;
+
+  if (backgroundMusicEnabled) {
+    startDf1MenuMusic();
+  } else {
+    stopDf1MenuMusic();
   }
 }
 
