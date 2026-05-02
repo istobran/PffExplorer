@@ -86,6 +86,7 @@ const packageTreeItemClass = css`
   &:hover {
     background: rgba(57, 232, 57, 0.07);
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
   }
 
   &:hover::after {
@@ -100,6 +101,7 @@ const packageTreeItemClass = css`
 
   &.active:hover {
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
   }
 
   &.active::after {
@@ -119,6 +121,7 @@ const packageTreeItemClass = css`
   &:hover .pff-icon,
   &:hover .pff-name {
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
   }
 

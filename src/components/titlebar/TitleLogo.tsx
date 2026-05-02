@@ -1,5 +1,6 @@
 import { css } from "@emotion/css";
-import { Crosshair } from "lucide-react";
+
+import deltaForceLogoUrl from "../../assets/images/df.svg";
 
 export type TitleLogoProps = Record<string, never>;
 
@@ -7,10 +8,10 @@ export function TitleLogo(_props: TitleLogoProps) {
   return (
     <div className={titleLogoClass} data-tauri-drag-region>
       <div className="logo-mark">
-        <Crosshair size={22} />
+        <img src={deltaForceLogoUrl} alt="" draggable={false} />
       </div>
       <div className="logo-text">
-        DELTA FORCE<span>TACTICAL TOOLS v2.1</span>
+        DELTA FORCE<span>TACTICAL TOOLS v1.0</span>
       </div>
     </div>
   );
@@ -33,6 +34,16 @@ const titleLogoClass = css`
     justify-content: center;
     color: var(--green-hi);
     background: #050c05;
+
+    img {
+      width: 22px;
+      height: 22px;
+      display: block;
+      object-fit: contain;
+      pointer-events: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
   }
 
   .logo-text {
@@ -42,6 +53,8 @@ const titleLogoClass = css`
     color: var(--green-sel);
     text-transform: uppercase;
     line-height: 1.1;
+    -webkit-user-select: none;
+    user-select: none;
 
     span {
       display: block;

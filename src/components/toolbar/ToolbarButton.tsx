@@ -48,6 +48,7 @@ export const toolbarButtonClass = css`
     border-color: var(--green-sel);
     color: var(--hover-text);
     background: var(--hover-row);
+    font-weight: var(--hover-text-weight);
     box-shadow: none;
     text-shadow: var(--hover-text-glow);
   }
@@ -60,6 +61,7 @@ export const toolbarButtonClass = css`
 
   &.on:hover {
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
   }
 
   &:disabled {
@@ -70,6 +72,7 @@ export const toolbarButtonClass = css`
       background: none;
       border-color: var(--border);
       color: var(--green-dim);
+      font-weight: inherit;
     }
   }
 `;

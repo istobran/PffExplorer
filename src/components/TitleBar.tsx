@@ -58,6 +58,8 @@ const titleBarClass = css`
     text-transform: uppercase;
     text-shadow: 0 0 14px rgba(85, 255, 85, 0.55), 0 0 28px rgba(85, 255, 85, 0.2);
     white-space: nowrap;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .win-controls {

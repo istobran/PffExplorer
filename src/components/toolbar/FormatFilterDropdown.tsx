@@ -126,6 +126,7 @@ const formatFilterDropdownClass = css`
     color: var(--hover-text);
     border-color: var(--green-sel);
     background: var(--hover-row);
+    font-weight: var(--hover-text-weight);
     box-shadow: none;
     text-shadow: var(--hover-text-glow);
   }
@@ -140,6 +141,7 @@ const formatFilterDropdownClass = css`
   .format-filter-button.active:hover {
     color: var(--hover-text);
     background: var(--hover-row);
+    font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
   }
 
@@ -196,12 +198,14 @@ const formatFilterDropdownClass = css`
   .format-option:hover {
     background: var(--hover-row);
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
   }
 
   .format-option.selected:hover {
     background: var(--sel-row);
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
   }
 

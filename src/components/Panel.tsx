@@ -53,6 +53,8 @@ const panelClass = css`
     padding: 0 10px;
     flex-shrink: 0;
     gap: 8px;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .panel-title {

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="562.5"
+   height="486"
+   viewBox="335 0 562.5 486"
+   sodipodi:docname="Delta_Force.svg"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.70710678"
+     inkscape:cx="608.81894"
+     inkscape:cy="337.28993"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer3" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Logo"
+     inkscape:highlight-color="#808080"
+     style="display:inline"
+>
+    <g
+       inkscape:groupmode="layer"
+       id="layer1"
+       inkscape:label="Emblem"
+       inkscape:highlight-color="#fa0000">
+      <path
+         id="path1"
+         style="fill:#7fff7f;fill-opacity:1;stroke-width:1.00217"
+         d="M 616.66565,0 335.57385,485.92969 H 616.66565 897.7594 L 670.67151,93.361328 542.25745,315.7832 h 58.79687 l -45.3164,81.45508 130.5,-111.625 H 627.6344 L 660.93909,227.93164 766.83362,411.3457 H 464.62073 L 616.66565,147.99609 Z"
+         inkscape:label="Path" />
+    </g>
+  </g>
+</svg>

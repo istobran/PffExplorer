@@ -48,6 +48,7 @@ const navButtonClass = css`
     background: var(--hover-row);
     color: var(--hover-text);
     border-color: var(--green-sel);
+    font-weight: var(--hover-text-weight);
     box-shadow: none;
     text-shadow: var(--hover-text-glow);
   }

@@ -88,6 +88,7 @@ const resourceTableRowItemClass = css`
 
   &:hover .td {
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
     text-shadow: var(--hover-text-glow);
   }
 
@@ -101,6 +102,7 @@ const resourceTableRowItemClass = css`
 
   &.selected:hover .td {
     color: var(--hover-text);
+    font-weight: var(--hover-text-weight);
   }
 
   .file-cell {
