@@ -1,4 +1,6 @@
+import { css } from "@emotion/css";
 import { FileArchive } from "lucide-react";
+import { useState } from "react";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { BinaryPreview } from "@/components/preview/BinaryPreview";
 import {
@@ -9,6 +11,7 @@ import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
 import { PreviewTextBlock, PreviewTextLoading } from "@/components/preview/PreviewTextBlock";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 export type PreviewPanelProps = {
   entry: ResourceEntry | null;
@@ -17,6 +20,8 @@ export type PreviewPanelProps = {
 };
 
 export function PreviewPanel(props: PreviewPanelProps) {
+  const [nightVision, setNightVision] = useState(true);
+
   if (!props.entry) {
     return <PreviewEmptyState icon={FileArchive} message="SELECT A RESOURCE TO PREVIEW" />;
   }
@@ -63,11 +68,15 @@ export function PreviewPanel(props: PreviewPanelProps) {
   if (props.preview.status === "image" && props.preview.image != null) {
     return (
       <PreviewBody compact>
-        <PreviewMeta entry={props.entry} preview={props.preview} />
+        <div className={imagePreviewHeaderClass}>
+          <PreviewMeta entry={props.entry} preview={props.preview} />
+          <ImagePreviewModeToggle value={nightVision} onChange={setNightVision} />
+        </div>
         <ImagePreviewDisplay
           image={props.preview.image}
           name={props.entry.name}
           animationKey={`${props.entry.archivePath}::${props.entry.tableIndex}`}
+          nightVision={nightVision}
         />
       </PreviewBody>
     );
@@ -125,3 +134,98 @@ function matchesExtension(name: string, ...extensions: string[]) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   return extensions.includes(ext);
 }
+
+type ImagePreviewModeToggleProps = {
+  value: boolean;
+  onChange: (value: boolean) => void;
+};
+
+function ImagePreviewModeToggle(props: ImagePreviewModeToggleProps) {
+  return (
+    <div className={imagePreviewModeToggleClass} role="group" aria-label="Image preview mode">
+      <button
+        type="button"
+        className={props.value ? "active" : undefined}
+        aria-pressed={props.value}
+        title="Night vision preview"
+        onClick={() => props.onChange(true)}
+        onPointerEnter={playUiHover}
+        onPointerDown={playUiPress}
+      >
+        NV
+      </button>
+      <button
+        type="button"
+        className={!props.value ? "active" : undefined}
+        aria-pressed={!props.value}
+        title="Original color preview"
+        onClick={() => props.onChange(false)}
+        onPointerEnter={playUiHover}
+        onPointerDown={playUiPress}
+      >
+        RGB
+      </button>
+    </div>
+  );
+}
+
+const imagePreviewHeaderClass = css`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom: 0;
+  }
+`;
+
+const imagePreviewModeToggleClass = css`
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border-hi);
+  background: #061206;
+  height: 18px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    min-width: 38px;
+    padding: 0 8px;
+    border: 0;
+    border-right: 1px solid var(--border-hi);
+    background: transparent;
+    color: var(--green-dim);
+    font: inherit;
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.6px;
+    cursor: pointer;
+  }
+
+  button:last-child {
+    border-right: 0;
+  }
+
+  button:hover {
+    color: var(--hover-text);
+    background: var(--hover-row);
+    text-shadow: var(--hover-text-glow);
+  }
+
+  button.active {
+    color: var(--green);
+    background: rgba(0, 204, 0, 0.16);
+    box-shadow: inset 0 0 8px rgba(0, 204, 0, 0.16);
+  }
+`;

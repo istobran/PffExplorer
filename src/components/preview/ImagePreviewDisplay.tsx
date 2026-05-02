@@ -16,6 +16,7 @@ export type ImagePreviewDisplayProps = {
   image: ImagePreview;
   name: string;
   animationKey: string;
+  nightVision: boolean;
 };
 
 export function ImagePreviewLoadingBox() {
@@ -113,7 +114,7 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
         {revealing && <RadarLoader key={`${props.animationKey}-reveal`} mode="reveal" />}
         {decodedSrc && !loadFailed && (
           <img
-            className={clsx(imageVisible && "revealed")}
+            className={clsx(imageVisible && "revealed", props.nightVision && "night-vision")}
             src={decodedSrc}
             alt={props.name}
           />
@@ -221,12 +222,14 @@ const imagePreviewDisplayClass = css`
     position: relative;
     z-index: 1;
     image-rendering: pixelated;
-    filter: sepia(0.2) hue-rotate(80deg) saturate(1.4) brightness(0.9);
-    transition: opacity 0.35s ease;
   }
 
   img.revealed {
     opacity: 1;
+  }
+
+  img.night-vision {
+    filter: grayscale(1) sepia(1) hue-rotate(58deg) saturate(4.5) brightness(0.96);
   }
 
   .image-load-error {
