@@ -70,6 +70,15 @@ PFF_EXPLORER_SAMPLE_PFF="/Users/BangZ/Downloads/dfxrc/resource.pff" cargo test o
 pnpm tauri build --debug
 ```
 
+## 提交约定
+
+- 每次完成用户要求的代码改动后，如果必要验证通过，应自动提交本次改动，除非用户明确说不要提交。
+- 提交前只暂存与本次任务相关的文件，不要把工作区里已有的无关改动带入提交。
+- 提交前按改动范围运行必要验证：前端改动至少运行 `pnpm build`，Rust 改动额外运行 `cd src-tauri && cargo test`；验证失败时不要提交，先修复或说明失败原因。
+- 纯文档改动可以不运行构建或测试，但需要在最终回复里说明。
+- 提交信息使用简洁的英文祈使句，概括本次改动。
+- 不要提交 `package-lock.json`、`yarn.lock` 或无关生成产物。
+
 ## 文件与依赖注意事项
 
 - 保留 `pnpm-lock.yaml`，不要提交 `package-lock.json` 或 `yarn.lock`。
