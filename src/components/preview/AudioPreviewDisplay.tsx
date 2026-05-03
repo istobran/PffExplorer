@@ -82,6 +82,24 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     if (audio) audio.volume = volume;
   }, [volume]);
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (
+        event.code !== "Space" ||
+        event.repeat ||
+        isEditableKeyboardTarget(event.target)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      togglePlayback();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   function stopAudioMeter() {
     const graph = audioMeterRef.current;
     if (!graph) return;
@@ -371,6 +389,18 @@ function audioBarsFromFrequencyData(data: Uint8Array, barCount: number) {
 
     return Math.max(18, Math.min(96, 18 + shapedEnergy * 78));
   });
+}
+
+function isEditableKeyboardTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+
+  if (target instanceof HTMLInputElement) {
+    return !["button", "checkbox", "radio", "range", "reset", "submit"].includes(target.type);
+  }
+
+  return false;
 }
 
 const audioPreviewDisplayClass = css`
