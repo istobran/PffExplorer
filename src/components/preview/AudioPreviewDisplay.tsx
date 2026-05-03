@@ -15,7 +15,7 @@ type AudioMeterGraph = {
   context: AudioContext;
   analyser: AnalyserNode;
   source: MediaElementAudioSourceNode;
-  data: Uint8Array;
+  frequencyData: Uint8Array;
   frameId: number | null;
 };
 
@@ -112,8 +112,8 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
       const context = new AudioContextClass({ latencyHint: "interactive" });
       const analyser = context.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.42;
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.58;
 
       let source: MediaElementAudioSourceNode;
       try {
@@ -131,7 +131,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
         context,
         analyser,
         source,
-        data: new Uint8Array(analyser.fftSize),
+        frequencyData: new Uint8Array(analyser.frequencyBinCount),
         frameId: null,
       };
       audioMeterRef.current = graph;
@@ -150,11 +150,11 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     const graph = audioMeterRef.current;
     if (!graph) return;
 
-    graph.analyser.getByteTimeDomainData(graph.data);
-    const nextHeights = audioBarsFromTimeDomain(graph.data, AUDIO_BAR_COUNT);
+    graph.analyser.getByteFrequencyData(graph.frequencyData);
+    const nextHeights = audioBarsFromFrequencyData(graph.frequencyData, AUDIO_BAR_COUNT);
     setBarHeights((currentHeights) =>
       nextHeights.map((nextHeight, index) =>
-        Math.round((currentHeights[index] ?? 18) * 0.36 + nextHeight * 0.64),
+        Math.round((currentHeights[index] ?? 18) * 0.42 + nextHeight * 0.58),
       ),
     );
 
@@ -338,18 +338,38 @@ function formatAudioTime(value: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function audioBarsFromTimeDomain(data: Uint8Array, barCount: number) {
-  const bucketSize = Math.max(1, Math.floor(data.length / barCount));
+function audioBarsFromFrequencyData(data: Uint8Array, barCount: number) {
+  if (data.length <= 2) return IDLE_AUDIO_BAR_HEIGHTS;
+
+  const minBin = 1;
+  const maxBin = data.length - 1;
+  const logMin = Math.log(minBin);
+  const logRange = Math.log(maxBin) - logMin;
+
   return Array.from({ length: barCount }, (_, bucketIndex) => {
-    const start = bucketIndex * bucketSize;
-    const end = Math.min(data.length, start + bucketSize);
+    const startRatio = bucketIndex / barCount;
+    const endRatio = (bucketIndex + 1) / barCount;
+    const start = Math.max(minBin, Math.floor(Math.exp(logMin + logRange * startRatio)));
+    const end = Math.min(
+      data.length,
+      Math.max(start + 1, Math.ceil(Math.exp(logMin + logRange * endRatio))),
+    );
     let peak = 0;
+    let sum = 0;
+    let count = 0;
 
     for (let index = start; index < end; index += 1) {
-      peak = Math.max(peak, Math.abs(data[index] - 128) / 128);
+      const value = data[index] ?? 0;
+      peak = Math.max(peak, value);
+      sum += value;
+      count += 1;
     }
 
-    return Math.max(18, Math.min(96, 18 + peak * 112));
+    const average = count > 0 ? sum / count : 0;
+    const energy = (peak * 0.72 + average * 0.28) / 255;
+    const shapedEnergy = Math.pow(Math.max(0, Math.min(1, energy)), 0.68);
+
+    return Math.max(18, Math.min(96, 18 + shapedEnergy * 78));
   });
 }
 
