@@ -48,7 +48,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const [duration, setDuration] = useState(props.audio.durationSeconds ?? 0);
   const [volume, setVolume] = useState(0.86);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [barHeights, setBarHeights] = useState(IDLE_AUDIO_BAR_HEIGHTS);
 
   useEffect(() => {
@@ -60,7 +59,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     setCurrentTime(0);
     setDuration(props.audio.durationSeconds ?? 0);
     setLoadFailed(false);
-    setAutoplayBlocked(false);
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
 
     audio.load();
@@ -69,7 +67,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     const playPromise = audio.play();
     if (playPromise) {
       void playPromise.then(startAudioMeter).catch(() => {
-        setAutoplayBlocked(true);
         stopAudioMeter();
       });
     }
@@ -199,10 +196,8 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     if (!audio) return;
 
     if (audio.paused) {
-      setAutoplayBlocked(false);
       void startAudioMeter();
       void audio.play().catch(() => {
-        setAutoplayBlocked(true);
         pauseAudioMeter();
       });
     } else {
@@ -216,10 +211,8 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
     audio.currentTime = 0;
     setCurrentTime(0);
-    setAutoplayBlocked(false);
     void startAudioMeter();
     void audio.play().catch(() => {
-      setAutoplayBlocked(true);
       pauseAudioMeter();
     });
   }
@@ -338,9 +331,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
           />
         </div>
 
-        {autoplayBlocked && !loadFailed && (
-          <div className="audio-message">PRESS PLAY TO START AUDIO</div>
-        )}
         {loadFailed && <div className="audio-message error">AUDIO DECODE FAILED</div>}
       </div>
     </div>
