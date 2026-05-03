@@ -1,3 +1,3 @@
 Fonts downloaded from Google Fonts.
 
-- Orbitron: https://fonts.google.com/specimen/Orbitron
+- Science Gothic: https://fonts.google.com/specimen/Science+Gothic

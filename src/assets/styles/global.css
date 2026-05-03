@@ -1,8 +1,9 @@
 @font-face {
-  font-family: "Orbitron";
-  src: url("../fonts/orbitron.ttf") format("truetype");
+  font-family: "Science Gothic";
+  src: url("../fonts/science-gothic.ttf") format("truetype");
   font-style: normal;
   font-weight: 400;
+  font-stretch: normal;
   font-display: swap;
 }
 
@@ -24,8 +25,8 @@
   --hover-row: #091809;
   --title: #c3fdc3;
   --text-dim: #31aa31;
-  --font-mono: "Orbitron", "Courier New", monospace;
-  --font-vt: "Orbitron", "Courier New", monospace;
+  --font-mono: "Science Gothic", "Courier New", monospace;
+  --font-vt: "Science Gothic", "Courier New", monospace;
   --cursor-crosshair: url("../images/df1-cursor.png") 11 11;
 }
 
