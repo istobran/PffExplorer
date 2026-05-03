@@ -43,6 +43,80 @@ fn filters_deleted_entries_from_snapshot() {
 }
 
 #[test]
+fn opens_known_pff_versions() {
+    let cases = [
+        ("pff0.pff", *b"PFF0", 32_u32, "PFF0", None),
+        ("pff2.pff", *b"PFF2", 32_u32, "PFF2", Some(0x1234_abcd)),
+        ("pff3-32.pff", *b"PFF3", 32_u32, "PFF3", None),
+        ("pff4-36.pff", *b"PFF4", 36_u32, "PFF4", Some(0xfeed_beef)),
+        (
+            "pff3-f4.pff",
+            [0x01, 0x00, b'F', b'4'],
+            36_u32,
+            "PFF3-F4",
+            Some(0xa5a5_5a5a),
+        ),
+    ];
+
+    for (name, signature, entry_size, expected_version, checksum) in cases {
+        let path = temp_path(name);
+        let mut entry = fixture_entry(0, "hello.txt", b"hello");
+        entry.checksum = checksum;
+        write_version_fixture(&path, signature, entry_size, 20, vec![entry]);
+
+        let archive = PffArchive::open(&path).expect("archive opens");
+        assert_eq!(archive.header.version(), expected_version);
+        assert_eq!(archive.entries.len(), 1);
+        assert_eq!(archive.entries[0].name, "hello.txt");
+        assert_eq!(archive.entries[0].checksum, checksum);
+        assert_eq!(archive.entries[0].flags, 0);
+        assert_eq!(archive.extract_raw(&archive.entries[0]).unwrap(), b"hello");
+
+        let _ = fs::remove_file(path);
+    }
+}
+
+#[test]
+fn opens_pff_with_nonstandard_header_read_length() {
+    let path = temp_path("nonstandard-header-len.pff");
+    write_version_fixture(
+        &path,
+        *b"PFF3",
+        36,
+        62,
+        vec![fixture_entry(0, "hello.txt", b"hello")],
+    );
+
+    let archive = PffArchive::open(&path).expect("archive opens");
+    assert_eq!(archive.header.version(), "PFF3");
+    assert_eq!(archive.extract_raw(&archive.entries[0]).unwrap(), b"hello");
+
+    let _ = fs::remove_file(path);
+}
+
+#[test]
+fn filters_dead_space_name_from_legacy_snapshot() {
+    let path = temp_path("legacy-dead-space.pff");
+    write_version_fixture(
+        &path,
+        *b"PFF2",
+        32,
+        20,
+        vec![
+            fixture_entry(0, "live.txt", b"live"),
+            fixture_entry(1, "<DEAD SPACE>", b"dead"),
+        ],
+    );
+
+    let snapshot = snapshot_from_archives(vec![PffArchive::open(&path).unwrap()], Vec::new());
+    assert_eq!(snapshot.entries.len(), 1);
+    assert_eq!(snapshot.entries[0].name, "live.txt");
+    assert_eq!(snapshot.stats.deleted_count, 1);
+
+    let _ = fs::remove_file(path);
+}
+
+#[test]
 fn export_entry_creates_parent_dirs() {
     let archive_path = temp_path("export-source.pff");
     let output_dir = temp_path("export-output");
@@ -239,6 +313,7 @@ fn previews_external_sample_audio_when_env_is_set() {
 #[derive(Clone)]
 struct FixtureEntry {
     flags: u32,
+    checksum: Option<u32>,
     name: String,
     data: Vec<u8>,
 }
@@ -246,6 +321,7 @@ struct FixtureEntry {
 fn fixture_entry(_index: u32, name: &str, data: &[u8]) -> FixtureEntry {
     FixtureEntry {
         flags: 0,
+        checksum: None,
         name: name.to_string(),
         data: data.to_vec(),
     }
@@ -266,9 +342,17 @@ fn fixture_png() -> Vec<u8> {
 }
 
 fn write_fixture(path: &Path, fixtures: Vec<FixtureEntry>) {
-    let header_size = 20_u32;
-    let entry_size = 36_u32;
-    let data_start = header_size as usize;
+    write_version_fixture(path, *b"PFF3", 36, 20, fixtures);
+}
+
+fn write_version_fixture(
+    path: &Path,
+    signature: [u8; 4],
+    entry_size: u32,
+    header_read_len: u32,
+    fixtures: Vec<FixtureEntry>,
+) {
+    let data_start = 20_usize;
     let data_len = fixtures
         .iter()
         .map(|fixture| fixture.data.len())
@@ -276,8 +360,8 @@ fn write_fixture(path: &Path, fixtures: Vec<FixtureEntry>) {
     let table_offset = (data_start + data_len) as u32;
 
     let mut bytes = Vec::new();
-    bytes.extend_from_slice(&header_size.to_le_bytes());
-    bytes.extend_from_slice(b"PFF3");
+    bytes.extend_from_slice(&header_read_len.to_le_bytes());
+    bytes.extend_from_slice(&signature);
     bytes.extend_from_slice(&(fixtures.len() as u32).to_le_bytes());
     bytes.extend_from_slice(&entry_size.to_le_bytes());
     bytes.extend_from_slice(&table_offset.to_le_bytes());
@@ -289,7 +373,13 @@ fn write_fixture(path: &Path, fixtures: Vec<FixtureEntry>) {
     }
 
     for (idx, fixture) in fixtures.iter().enumerate() {
-        bytes.extend_from_slice(&fixture.flags.to_le_bytes());
+        let first_field = match signature {
+            sig if sig == *b"PFF0" => 0,
+            sig if sig == *b"PFF2" => fixture.checksum.unwrap_or(0),
+            _ => fixture.flags,
+        };
+
+        bytes.extend_from_slice(&first_field.to_le_bytes());
         bytes.extend_from_slice(&offsets[idx].to_le_bytes());
         bytes.extend_from_slice(&(fixture.data.len() as u32).to_le_bytes());
         bytes.extend_from_slice(&0_u32.to_le_bytes());
@@ -299,6 +389,13 @@ fn write_fixture(path: &Path, fixtures: Vec<FixtureEntry>) {
         let copy_len = name_bytes.len().min(16);
         name[..copy_len].copy_from_slice(&name_bytes[..copy_len]);
         bytes.extend_from_slice(&name);
+
+        if entry_size == 36 {
+            bytes.extend_from_slice(&fixture.checksum.unwrap_or(0).to_le_bytes());
+        }
+    }
+
+    if signature == *b"PFF2" {
         bytes.extend_from_slice(&0_u32.to_le_bytes());
     }
 

@@ -8,8 +8,6 @@ pub enum PffError {
     Io(#[from] io::Error),
     #[error("invalid PFF magic: {0:?}")]
     InvalidMagic([u8; 4]),
-    #[error("invalid PFF header size: {0}")]
-    InvalidHeaderSize(u32),
     #[error("invalid PFF entry size: {0}")]
     InvalidEntrySize(u32),
     #[error("entry table is outside archive bounds")]
