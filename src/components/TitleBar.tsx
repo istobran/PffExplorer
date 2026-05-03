@@ -27,7 +27,9 @@ export function TitleBar(props: TitleBarProps) {
         OPEN FILE
       </NavButton>
       <div className="nav-center" data-tauri-drag-region>
-        <div className="nav-title">PFF RESOURCE EXPLORER</div>
+        <div className="nav-title" data-tauri-drag-region>
+          PFF RESOURCE EXPLORER
+        </div>
       </div>
       <TitleLogo />
       <BackgroundMusicToggleButton

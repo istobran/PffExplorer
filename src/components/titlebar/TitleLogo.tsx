@@ -7,11 +7,11 @@ export type TitleLogoProps = Record<string, never>;
 export function TitleLogo(_props: TitleLogoProps) {
   return (
     <div className={titleLogoClass} data-tauri-drag-region>
-      <div className="logo-mark">
-        <img src={deltaForceLogoUrl} alt="" draggable={false} />
+      <div className="logo-mark" data-tauri-drag-region>
+        <img src={deltaForceLogoUrl} alt="" draggable={false} data-tauri-drag-region />
       </div>
-      <div className="logo-text">
-        DELTA FORCE<span>TACTICAL TOOLS v1.0</span>
+      <div className="logo-text" data-tauri-drag-region>
+        DELTA FORCE<span data-tauri-drag-region>TACTICAL TOOLS v1.0</span>
       </div>
     </div>
   );
