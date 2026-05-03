@@ -178,7 +178,7 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
   if (asyncTextLoading || !fullLines) {
     return (
       <div ref={blockRef}>
-        <PreviewTextLoading message="正在加载文本预览..." />
+        <PreviewTextLoading message="LOADING TEXT PREVIEW..." />
       </div>
     );
   }
@@ -207,7 +207,7 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
           cursor={!animationComplete && isLineTyping(animatedLines[index] ?? "", index, elapsedMs)}
         />
       ))}
-      {loadingRemainingText && <PreviewTextLoading message="正在加载剩余文本..." compact />}
+      {loadingRemainingText && <PreviewTextLoading message="LOADING REMAINING TEXT..." compact />}
     </div>
   );
 }

@@ -91,7 +91,7 @@ export function PreviewPanel(props: PreviewPanelProps) {
     if (isPreviewableTextName(props.entry.name)) {
       return (
         <PreviewBody>
-          <PreviewTextLoading message="正在加载文本预览..." />
+          <PreviewTextLoading message="LOADING TEXT PREVIEW..." />
         </PreviewBody>
       );
     }

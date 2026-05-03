@@ -119,7 +119,7 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
             alt={props.name}
           />
         )}
-        {loadFailed && <div className="image-load-error">图像加载失败</div>}
+        {loadFailed && <div className="image-load-error">IMAGE LOAD FAILED</div>}
       </div>
     </div>
   );
