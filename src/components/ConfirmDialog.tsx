@@ -63,7 +63,7 @@ const confirmDialogOverlayClass = css`
   justify-content: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.64);
-  animation: confirm-overlay-in 120ms ease-out both;
+  animation: confirm-overlay-in 180ms ease-out both;
 
   .confirm-dialog {
     width: min(520px, 100%);
@@ -73,7 +73,24 @@ const confirmDialogOverlayClass = css`
     overflow: hidden;
     box-shadow: 0 0 0 1px rgba(0, 252, 0, 0.12), 0 0 28px rgba(0, 252, 0, 0.12);
     transform-origin: center;
-    animation: confirm-dialog-in 160ms steps(7, end) both;
+    animation: confirm-dialog-in 280ms steps(10, end) both;
+
+    &::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      z-index: 4;
+      pointer-events: none;
+      background: var(--green-sel);
+      box-shadow:
+        0 0 8px rgba(0, 252, 0, 0.8),
+        0 0 18px rgba(0, 252, 0, 0.35);
+      transform: translate(-50%, -50%);
+      animation: confirm-signal-in 280ms steps(10, end) both;
+    }
 
     &::after {
       content: "";
@@ -85,19 +102,23 @@ const confirmDialogOverlayClass = css`
       pointer-events: none;
       background: var(--green-sel);
       box-shadow: 0 0 10px rgba(0, 252, 0, 0.45);
-      animation: confirm-scanline-in 160ms steps(7, end) both;
+      animation: confirm-scanline-in 280ms steps(10, end) both;
     }
   }
 
   &.closing {
-    animation: confirm-overlay-out 130ms ease-in both;
+    animation: confirm-overlay-out 260ms ease-in both;
   }
 
   &.closing .confirm-dialog {
-    animation: confirm-dialog-out 130ms steps(6, end) both;
+    animation: confirm-dialog-out 260ms steps(9, end) both;
+
+    &::before {
+      animation: confirm-signal-out 260ms steps(9, end) both;
+    }
 
     &::after {
-      animation: confirm-scanline-out 130ms steps(6, end) both;
+      animation: confirm-scanline-out 260ms steps(9, end) both;
     }
   }
 
@@ -182,26 +203,53 @@ const confirmDialogOverlayClass = css`
   @keyframes confirm-dialog-in {
     0% {
       opacity: 0;
-      transform: scaleY(0.01);
-      clip-path: inset(50% 0 50% 0);
+      clip-path: inset(50% 50% 50% 50%);
     }
-    16% {
+    18% {
       opacity: 1;
-      transform: scaleY(0.01);
+      clip-path: inset(49.5% 49.5% 49.5% 49.5%);
+    }
+    44% {
+      opacity: 1;
       clip-path: inset(49.5% 0 49.5% 0);
     }
     100% {
       opacity: 1;
-      transform: scaleY(1);
       clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes confirm-signal-in {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+    12%,
+    34% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    44%,
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.8);
     }
   }
 
   @keyframes confirm-scanline-in {
     0%,
-    60% {
+    14% {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    18% {
       opacity: 1;
-      transform: scaleX(0.18);
+      transform: scaleX(0.02);
+    }
+    44%,
+    72% {
+      opacity: 1;
+      transform: scaleX(1);
     }
     100% {
       opacity: 0;
@@ -212,18 +260,36 @@ const confirmDialogOverlayClass = css`
   @keyframes confirm-dialog-out {
     0% {
       opacity: 1;
-      transform: scaleY(1);
       clip-path: inset(0 0 0 0);
     }
-    84% {
+    56% {
       opacity: 1;
-      transform: scaleY(0.01);
       clip-path: inset(49.5% 0 49.5% 0);
+    }
+    82% {
+      opacity: 1;
+      clip-path: inset(49.5% 49.5% 49.5% 49.5%);
     }
     100% {
       opacity: 0;
-      transform: scaleY(0.01);
-      clip-path: inset(50% 0 50% 0);
+      clip-path: inset(50% 50% 50% 50%);
+    }
+  }
+
+  @keyframes confirm-signal-out {
+    0%,
+    54% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.8);
+    }
+    72%,
+    92% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
     }
   }
 
@@ -232,10 +298,18 @@ const confirmDialogOverlayClass = css`
       opacity: 0;
       transform: scaleX(1);
     }
-    40%,
-    100% {
+    22%,
+    56% {
       opacity: 1;
       transform: scaleX(1);
+    }
+    82% {
+      opacity: 1;
+      transform: scaleX(0.02);
+    }
+    100% {
+      opacity: 0;
+      transform: scaleX(0);
     }
   }
 
