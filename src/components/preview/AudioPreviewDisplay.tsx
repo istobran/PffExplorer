@@ -1,10 +1,23 @@
 import { css } from "@emotion/css";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import clsx from "clsx";
 import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
 import { playUiHover, playUiPress } from "@/lib/sounds";
+
+const AUDIO_BAR_COUNT = 18;
+const IDLE_AUDIO_BAR_HEIGHTS = Array.from({ length: AUDIO_BAR_COUNT }, () => 18);
+
+type AudioContextConstructor = typeof AudioContext;
+
+type AudioMeterGraph = {
+  element: HTMLAudioElement;
+  context: AudioContext;
+  analyser: AnalyserNode;
+  source: MediaElementAudioSourceNode;
+  data: Uint8Array;
+  frameId: number | null;
+};
 
 export type AudioPreviewDisplayProps = {
   audio: AudioPreview;
@@ -25,6 +38,7 @@ export function AudioPreviewLoadingBox() {
 
 export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioMeterRef = useRef<AudioMeterGraph | null>(null);
   const audioSrc = useMemo(() => {
     if (props.audio.filePath) return convertFileSrc(props.audio.filePath);
     return props.audio.dataUrl;
@@ -35,32 +49,126 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const [volume, setVolume] = useState(0.86);
   const [loadFailed, setLoadFailed] = useState(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [barHeights, setBarHeights] = useState(IDLE_AUDIO_BAR_HEIGHTS);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !audioSrc) return;
 
+    stopAudioMeter();
     setPaused(true);
     setCurrentTime(0);
     setDuration(props.audio.durationSeconds ?? 0);
     setLoadFailed(false);
     setAutoplayBlocked(false);
+    setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
 
     audio.load();
     audio.volume = volume;
 
     const playPromise = audio.play();
     if (playPromise) {
-      void playPromise.catch(() => {
+      void playPromise.then(startAudioMeter).catch(() => {
         setAutoplayBlocked(true);
+        stopAudioMeter();
       });
     }
+
+    return stopAudioMeter;
   }, [audioSrc, props.animationKey, props.audio.durationSeconds]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) audio.volume = volume;
   }, [volume]);
+
+  function stopAudioMeter() {
+    const graph = audioMeterRef.current;
+    if (!graph) return;
+
+    if (graph.frameId !== null) {
+      cancelAnimationFrame(graph.frameId);
+    }
+    graph.source.disconnect();
+    graph.analyser.disconnect();
+    void graph.context.close().catch(() => undefined);
+    audioMeterRef.current = null;
+    setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
+  }
+
+  async function startAudioMeter() {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    let graph = audioMeterRef.current;
+    if (!graph || graph.element !== audio) {
+      stopAudioMeter();
+
+      const AudioContextClass =
+        window.AudioContext ??
+        (window as typeof window & { webkitAudioContext?: AudioContextConstructor })
+          .webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      const context = new AudioContextClass({ latencyHint: "interactive" });
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.42;
+
+      let source: MediaElementAudioSourceNode;
+      try {
+        source = context.createMediaElementSource(audio);
+      } catch {
+        void context.close().catch(() => undefined);
+        return;
+      }
+
+      source.connect(analyser);
+      analyser.connect(context.destination);
+
+      graph = {
+        element: audio,
+        context,
+        analyser,
+        source,
+        data: new Uint8Array(analyser.fftSize),
+        frameId: null,
+      };
+      audioMeterRef.current = graph;
+    }
+
+    if (graph.context.state === "suspended") {
+      await graph.context.resume().catch(() => undefined);
+    }
+
+    if (graph.frameId === null) {
+      updateAudioMeter();
+    }
+  }
+
+  function updateAudioMeter() {
+    const graph = audioMeterRef.current;
+    if (!graph) return;
+
+    graph.analyser.getByteTimeDomainData(graph.data);
+    const nextHeights = audioBarsFromTimeDomain(graph.data, AUDIO_BAR_COUNT);
+    setBarHeights((currentHeights) =>
+      nextHeights.map((nextHeight, index) =>
+        Math.round((currentHeights[index] ?? 18) * 0.36 + nextHeight * 0.64),
+      ),
+    );
+
+    graph.frameId = requestAnimationFrame(updateAudioMeter);
+  }
+
+  function pauseAudioMeter() {
+    const graph = audioMeterRef.current;
+    if (graph?.frameId !== null && graph?.frameId !== undefined) {
+      cancelAnimationFrame(graph.frameId);
+      graph.frameId = null;
+    }
+    setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
+  }
 
   function handleLoadedMetadata() {
     const audio = audioRef.current;
@@ -74,8 +182,10 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
     if (audio.paused) {
       setAutoplayBlocked(false);
+      void startAudioMeter();
       void audio.play().catch(() => {
         setAutoplayBlocked(true);
+        pauseAudioMeter();
       });
     } else {
       audio.pause();
@@ -89,8 +199,10 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     audio.currentTime = 0;
     setCurrentTime(0);
     setAutoplayBlocked(false);
+    void startAudioMeter();
     void audio.play().catch(() => {
       setAutoplayBlocked(true);
+      pauseAudioMeter();
     });
   }
 
@@ -111,7 +223,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   }
 
   const progressMax = Math.max(duration, 0.001);
-  const playedRatio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const channelLabel = props.audio.channels === 2 ? "STEREO" : "MONO";
   const formatDetails = [
     props.audio.codec,
@@ -119,9 +230,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     props.audio.bitsPerSample ? `${props.audio.bitsPerSample} BIT` : null,
     props.audio.channels ? channelLabel : null,
   ].filter(Boolean);
-  const waveformBars = props.audio.waveform.length
-    ? props.audio.waveform
-    : Array.from({ length: 48 }, () => 0);
 
   return (
     <div className={audioPreviewDisplayClass}>
@@ -132,21 +240,33 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
         src={audioSrc ?? undefined}
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-        onPlay={() => setPaused(false)}
-        onPause={() => setPaused(true)}
-        onEnded={() => setPaused(true)}
-        onError={() => setLoadFailed(true)}
+        onPlay={() => {
+          setPaused(false);
+          void startAudioMeter();
+        }}
+        onPause={() => {
+          setPaused(true);
+          pauseAudioMeter();
+        }}
+        onEnded={() => {
+          setPaused(true);
+          pauseAudioMeter();
+        }}
+        onError={() => {
+          setLoadFailed(true);
+          stopAudioMeter();
+        }}
       />
 
       <div className="audio-shell">
         <div className="audio-visual" aria-hidden="true">
           <AudioLines className="audio-icon" size={28} />
           <div className="audio-bars">
-            {waveformBars.map((value, index) => (
+            {barHeights.map((height, index) => (
               <span
                 key={index}
-                className={clsx((index + 1) / waveformBars.length <= playedRatio && "played")}
-                style={{ height: `${waveformBarHeight(value)}%` }}
+                className={paused ? undefined : "playing"}
+                style={{ height: `${height}%` }}
               />
             ))}
           </div>
@@ -218,9 +338,19 @@ function formatAudioTime(value: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function waveformBarHeight(value: number) {
-  if (!Number.isFinite(value) || value <= 0) return 6;
-  return Math.max(8, Math.min(100, value * 100));
+function audioBarsFromTimeDomain(data: Uint8Array, barCount: number) {
+  const bucketSize = Math.max(1, Math.floor(data.length / barCount));
+  return Array.from({ length: barCount }, (_, bucketIndex) => {
+    const start = bucketIndex * bucketSize;
+    const end = Math.min(data.length, start + bucketSize);
+    let peak = 0;
+
+    for (let index = start; index < end; index += 1) {
+      peak = Math.max(peak, Math.abs(data[index] - 128) / 128);
+    }
+
+    return Math.max(18, Math.min(96, 18 + peak * 112));
+  });
 }
 
 const audioPreviewDisplayClass = css`
@@ -282,25 +412,23 @@ const audioPreviewDisplayClass = css`
     height: 42px;
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
   }
 
   .audio-bars span {
     width: 100%;
+    height: 18%;
     min-width: 3px;
     background: var(--green-sel);
-    opacity: 0.36;
+    opacity: 0.4;
     box-shadow: 0 0 6px rgba(0, 252, 0, 0.28);
     transition:
-      height 80ms linear,
-      opacity 120ms linear,
-      background-color 120ms linear;
+      height 44ms linear,
+      opacity 120ms linear;
   }
 
-  .audio-bars span.played {
+  .audio-bars span.playing {
     opacity: 0.92;
-    background: var(--hover-text);
-    box-shadow: var(--hover-text-glow);
   }
 
   .audio-title {

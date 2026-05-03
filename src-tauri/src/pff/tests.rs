@@ -83,9 +83,6 @@ fn previews_wav_audio() {
     assert_eq!(audio.sample_rate, Some(8000));
     assert_eq!(audio.channels, Some(1));
     assert_eq!(audio.bits_per_sample, Some(8));
-    assert_eq!(audio.waveform.len(), 48);
-    assert!(audio.waveform.iter().all(|value| value.is_finite()));
-    assert!(audio.waveform.iter().any(|value| *value > 0.0));
     assert!(audio
         .data_url
         .as_deref()
