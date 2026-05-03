@@ -11,7 +11,8 @@ import {
   type Monitor,
 } from "@tauri-apps/api/window";
 import { join } from "@tauri-apps/api/path";
-import { confirm, message, open, save } from "@tauri-apps/plugin-dialog";
+import { message, open, save } from "@tauri-apps/plugin-dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PackageTree } from "@/components/PackageTree";
 import { Panel } from "@/components/Panel";
 import { PreviewPanel } from "@/components/PreviewPanel";
@@ -70,6 +71,14 @@ type LoadOpenedPffPathsOptions = {
   persist: boolean;
 };
 
+type ConfirmDialogState = {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  resolve: (accepted: boolean) => void;
+};
+
 function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(EMPTY_SNAPSHOT);
   const [activeArchivePath, setActiveArchivePath] = useState<string | null>(null);
@@ -82,6 +91,8 @@ function App() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [confirmDialogState, setConfirmDialogState] =
+    useState<ConfirmDialogState | null>(null);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
   const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
   const [backgroundMusicEnabled, setBackgroundMusicEnabledState] = useState(() =>
@@ -615,10 +626,12 @@ function App() {
     const groupByPackage = activeArchivePath === null || archiveCount > 1;
 
     if (groupByPackage) {
-      const accepted = await confirm(
-        `Selected resources will be exported into package folders under:\n${outputDirectory}`,
-        { title: "Batch export", kind: "info" },
-      );
+      const accepted = await showConfirmDialog({
+        title: "BATCH EXPORT",
+        message: `Selected resources will be exported into package folders under:\n${outputDirectory}`,
+        confirmLabel: "EXPORT",
+        cancelLabel: "CANCEL",
+      });
       if (!accepted) return;
     }
 
@@ -719,6 +732,20 @@ function App() {
     });
   }
 
+  function showConfirmDialog(options: Omit<ConfirmDialogState, "resolve">) {
+    return new Promise<boolean>((resolve) => {
+      setConfirmDialogState({ ...options, resolve });
+    });
+  }
+
+  function closeConfirmDialog(accepted: boolean) {
+    const current = confirmDialogState;
+    if (!current) return;
+
+    setConfirmDialogState(null);
+    current.resolve(accepted);
+  }
+
   return (
     <main className={appShellClass}>
       <TitleBar
@@ -788,6 +815,17 @@ function App() {
         snapshot={snapshot}
         activeArchivePath={activeArchivePath}
       />
+
+      {confirmDialogState && (
+        <ConfirmDialog
+          title={confirmDialogState.title}
+          message={confirmDialogState.message}
+          confirmLabel={confirmDialogState.confirmLabel}
+          cancelLabel={confirmDialogState.cancelLabel}
+          onConfirm={() => closeConfirmDialog(true)}
+          onCancel={() => closeConfirmDialog(false)}
+        />
+      )}
     </main>
   );
 }
