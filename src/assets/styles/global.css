@@ -7,14 +7,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "VT323";
-  src: url("../fonts/vt323.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
 :root {
   --bg: #050c05;
   --panel-bg: #070e07;
@@ -27,14 +19,14 @@
   --danger: #ff5555;
   --hover-text: #d77e42;
   --hover-text-glow: none;
-  --hover-text-weight: 700;
+  --hover-text-weight: 400;
   --sel-bg: #092909;
   --sel-row: #0b3d0b;
   --hover-row: #091809;
   --title: #c3fdc3;
   --text-dim: #31aa31;
   --font-mono: "Science Gothic", "Courier New", monospace;
-  --font-vt: "VT323", "Science Gothic", monospace;
+  --font-vt: "Science Gothic", "Courier New", monospace;
   --cursor-crosshair: url("../images/df1-cursor.png") 11 11;
 }
 
