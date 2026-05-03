@@ -46,7 +46,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const [paused, setPaused] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(props.audio.durationSeconds ?? 0);
-  const [volume, setVolume] = useState(0.86);
+  const [volume, setVolume] = useState(1);
   const [loadFailed, setLoadFailed] = useState(false);
   const [barHeights, setBarHeights] = useState(IDLE_AUDIO_BAR_HEIGHTS);
 
