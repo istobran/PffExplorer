@@ -792,24 +792,12 @@ function App() {
     const nextMuted = !soundMuted;
     setSoundMuted(nextMuted);
     setSoundMutedState(nextMuted);
-    setStatus({
-      label: nextMuted ? "MUTED" : "AUDIO ON",
-      target: "SOUND",
-      progressLabel: "IDLE",
-      progress: null,
-    });
   }
 
   function toggleBackgroundMusic() {
     const nextEnabled = !backgroundMusicEnabled;
     setBackgroundMusicEnabled(nextEnabled);
     setBackgroundMusicEnabledState(nextEnabled);
-    setStatus({
-      label: nextEnabled ? "MUSIC ON" : "MUSIC OFF",
-      target: "BGM",
-      progressLabel: "IDLE",
-      progress: null,
-    });
   }
 
   function showConfirmDialog(options: Omit<ConfirmDialogState, "closing" | "resolve">) {

@@ -12,9 +12,7 @@ export type StatusBarProps = {
 };
 
 export function StatusBar(props: StatusBarProps) {
-  const pkg = props.activeArchivePath
-    ? basename(props.activeArchivePath).toUpperCase()
-    : props.status.target;
+  const pkg = packageStatusLabel(props.snapshot, props.activeArchivePath);
 
   return (
     <footer id="statusbar" className={statusBarClass}>
@@ -51,3 +49,9 @@ const statusBarClass = css`
   gap: 0;
   min-width: 0;
 `;
+
+function packageStatusLabel(snapshot: WorkspaceSnapshot, activeArchivePath: string | null) {
+  if (activeArchivePath) return basename(activeArchivePath).toUpperCase();
+  if (snapshot.archives.length > 0) return "ALL PACKAGES";
+  return "-";
+}
