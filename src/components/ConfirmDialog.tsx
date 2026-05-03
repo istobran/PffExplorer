@@ -70,17 +70,35 @@ const confirmDialogOverlayClass = css`
     background: var(--panel-bg);
     border: 1px solid var(--border-hi);
     position: relative;
+    overflow: hidden;
     box-shadow: 0 0 0 1px rgba(0, 252, 0, 0.12), 0 0 28px rgba(0, 252, 0, 0.12);
     transform-origin: center;
-    animation: confirm-dialog-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: confirm-dialog-in 160ms steps(7, end) both;
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      pointer-events: none;
+      background: var(--green-sel);
+      box-shadow: 0 0 10px rgba(0, 252, 0, 0.45);
+      animation: confirm-scanline-in 160ms steps(7, end) both;
+    }
   }
 
   &.closing {
-    animation: confirm-overlay-out 110ms ease-in both;
+    animation: confirm-overlay-out 130ms ease-in both;
   }
 
   &.closing .confirm-dialog {
-    animation: confirm-dialog-out 110ms ease-in both;
+    animation: confirm-dialog-out 130ms steps(6, end) both;
+
+    &::after {
+      animation: confirm-scanline-out 130ms steps(6, end) both;
+    }
   }
 
   .dialog-header {
@@ -162,28 +180,62 @@ const confirmDialogOverlayClass = css`
   }
 
   @keyframes confirm-dialog-in {
-    from {
+    0% {
       opacity: 0;
-      transform: translateY(8px) scale(0.98);
-      clip-path: inset(0 50% 0 50%);
+      transform: scaleY(0.01);
+      clip-path: inset(50% 0 50% 0);
     }
-    to {
+    16% {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: scaleY(0.01);
+      clip-path: inset(49.5% 0 49.5% 0);
+    }
+    100% {
+      opacity: 1;
+      transform: scaleY(1);
       clip-path: inset(0 0 0 0);
     }
   }
 
-  @keyframes confirm-dialog-out {
-    from {
+  @keyframes confirm-scanline-in {
+    0%,
+    60% {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: scaleX(0.18);
+    }
+    100% {
+      opacity: 0;
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes confirm-dialog-out {
+    0% {
+      opacity: 1;
+      transform: scaleY(1);
       clip-path: inset(0 0 0 0);
     }
-    to {
+    84% {
+      opacity: 1;
+      transform: scaleY(0.01);
+      clip-path: inset(49.5% 0 49.5% 0);
+    }
+    100% {
       opacity: 0;
-      transform: translateY(4px) scale(0.985);
-      clip-path: inset(0 50% 0 50%);
+      transform: scaleY(0.01);
+      clip-path: inset(50% 0 50% 0);
+    }
+  }
+
+  @keyframes confirm-scanline-out {
+    0% {
+      opacity: 0;
+      transform: scaleX(1);
+    }
+    40%,
+    100% {
+      opacity: 1;
+      transform: scaleX(1);
     }
   }
 
