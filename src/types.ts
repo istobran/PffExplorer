@@ -70,6 +70,7 @@ export type AudioPreview = {
   channels: number | null;
   bitsPerSample: number | null;
   durationSeconds: number | null;
+  waveform: number[];
 };
 
 export type ExportResult = {

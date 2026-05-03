@@ -79,10 +79,13 @@ fn previews_wav_audio() {
     let audio = preview.audio.expect("audio preview");
     assert_eq!(audio.format, "WAV");
     assert_eq!(audio.mime_type, "audio/wav");
-    assert!(audio.codec.contains("PCM"));
+    assert_eq!(audio.codec, "PCM");
     assert_eq!(audio.sample_rate, Some(8000));
     assert_eq!(audio.channels, Some(1));
     assert_eq!(audio.bits_per_sample, Some(8));
+    assert_eq!(audio.waveform.len(), 48);
+    assert!(audio.waveform.iter().all(|value| value.is_finite()));
+    assert!(audio.waveform.iter().any(|value| *value > 0.0));
     assert!(audio
         .data_url
         .as_deref()
@@ -202,7 +205,7 @@ fn fixture_entry(_index: u32, name: &str, data: &[u8]) -> FixtureEntry {
 }
 
 fn fixture_wav() -> Vec<u8> {
-    let pcm = [0x80_u8, 0x80, 0x80, 0x80];
+    let pcm = [0x00_u8, 0x40, 0x80, 0xff];
     write_pcm_wav(8000, 1, 8, &pcm)
 }
 

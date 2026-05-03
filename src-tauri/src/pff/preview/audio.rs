@@ -15,6 +15,8 @@ use super::super::models::AudioPreview;
 use super::super::transform::MAX_DECODED_SIZE;
 use super::util::extension;
 
+const WAVEFORM_BUCKETS: usize = 48;
+
 pub(super) struct AudioPreviewResult {
     pub(super) preview: AudioPreview,
     pub(super) transform: Option<String>,
@@ -23,11 +25,13 @@ pub(super) struct AudioPreviewResult {
 #[derive(Debug, Clone)]
 struct DecodedAudio {
     pcm: Vec<u8>,
+    format: String,
     channels: u16,
     sample_rate: u32,
     codec: String,
     bits_per_sample: Option<u16>,
     duration_seconds: Option<f64>,
+    waveform: Vec<f32>,
 }
 
 pub(super) fn audio_preview_from_bytes_with_cache(
@@ -59,13 +63,14 @@ pub(super) fn audio_preview_from_bytes_with_cache(
         preview: AudioPreview {
             data_url,
             file_path,
-            format: "WAV".to_string(),
+            format: decoded.format,
             mime_type: mime_type.to_string(),
             codec: decoded.codec,
             sample_rate: Some(decoded.sample_rate),
             channels: Some(decoded.channels),
             bits_per_sample: decoded.bits_per_sample,
             duration_seconds: decoded.duration_seconds,
+            waveform: decoded.waveform,
         },
         transform: Some("SYMPHONIA->PCM WAV".to_string()),
     })
@@ -88,6 +93,7 @@ fn decode_audio_to_pcm(name: &str, data: &[u8]) -> Result<DecodedAudio, PffError
             &MetadataOptions::default(),
         )
         .map_err(|error| symphonia_audio_error(name, "probe", error))?;
+    let source_format = audio_format_label(name, data);
     let mut format = probed.format;
     let track = format
         .default_track()
@@ -159,16 +165,19 @@ fn decode_audio_to_pcm(name: &str, data: &[u8]) -> Result<DecodedAudio, PffError
 
     let sample_count = pcm.len() / 2;
     let frame_count = sample_count / usize::from(channels);
+    let waveform = waveform_from_pcm(&pcm, channels, WAVEFORM_BUCKETS);
 
     Ok(DecodedAudio {
         pcm,
+        format: source_format,
         channels,
         sample_rate,
-        codec: symphonia_codec_label(&codec_params),
+        codec: concise_codec_label(&codec_params),
         bits_per_sample: codec_params
             .bits_per_sample
             .and_then(|value| u16::try_from(value).ok()),
         duration_seconds: Some(frame_count as f64 / sample_rate as f64),
+        waveform,
     })
 }
 
@@ -179,15 +188,73 @@ fn symphonia_audio_error(name: &str, phase: &str, error: SymphoniaError) -> PffE
     }
 }
 
-fn symphonia_codec_label(codec_params: &CodecParameters) -> String {
-    symphonia::default::get_codecs()
-        .get_codec(codec_params.codec)
-        .map(|descriptor| descriptor.long_name.to_string())
-        .unwrap_or_else(|| codec_type_label(codec_params.codec))
+fn audio_format_label(name: &str, data: &[u8]) -> String {
+    match extension(name).as_str() {
+        "wav" | "wave" => "WAV".to_string(),
+        "mp3" => "MP3".to_string(),
+        ext if !ext.is_empty() => ext.to_ascii_uppercase(),
+        _ if is_wav_data(data) => "WAV".to_string(),
+        _ if is_mp3_data(data) => "MP3".to_string(),
+        _ => "AUDIO".to_string(),
+    }
+}
+
+fn concise_codec_label(codec_params: &CodecParameters) -> String {
+    let Some(descriptor) = symphonia::default::get_codecs().get_codec(codec_params.codec) else {
+        return codec_type_label(codec_params.codec);
+    };
+
+    let short_name = descriptor.short_name.to_ascii_uppercase();
+    if short_name.starts_with("PCM") {
+        "PCM".to_string()
+    } else {
+        short_name.replace('_', " ")
+    }
 }
 
 fn codec_type_label(codec: CodecType) -> String {
     format!("codec {codec}")
+}
+
+fn waveform_from_pcm(pcm: &[u8], channels: u16, bucket_count: usize) -> Vec<f32> {
+    let channel_count = usize::from(channels).max(1);
+    let sample_count = pcm.len() / 2;
+    let frame_count = sample_count / channel_count;
+    if frame_count == 0 || bucket_count == 0 {
+        return Vec::new();
+    }
+
+    let mut peaks = Vec::with_capacity(bucket_count);
+    for bucket in 0..bucket_count {
+        let start_frame = bucket * frame_count / bucket_count;
+        let mut end_frame = (bucket + 1) * frame_count / bucket_count;
+        if end_frame <= start_frame {
+            end_frame = (start_frame + 1).min(frame_count);
+        }
+
+        let start_sample = start_frame * channel_count;
+        let end_sample = end_frame * channel_count;
+        let mut peak = 0.0_f32;
+        for sample_index in start_sample..end_sample {
+            let byte_index = sample_index * 2;
+            let Some(bytes) = pcm.get(byte_index..byte_index + 2) else {
+                continue;
+            };
+            let sample = i16::from_le_bytes([bytes[0], bytes[1]]);
+            let amplitude = (sample as f32 / 32768.0).abs().min(1.0);
+            peak = peak.max(amplitude);
+        }
+        peaks.push(peak);
+    }
+
+    let max_peak = peaks.iter().copied().fold(0.0_f32, f32::max);
+    if max_peak > 0.0 {
+        for peak in &mut peaks {
+            *peak = ((*peak / max_peak) * 1000.0).round() / 1000.0;
+        }
+    }
+
+    peaks
 }
 
 pub(crate) fn write_pcm_wav(

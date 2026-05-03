@@ -1,5 +1,6 @@
 import { css } from "@emotion/css";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import clsx from "clsx";
 import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
@@ -110,13 +111,18 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   }
 
   const progressMax = Math.max(duration, 0.001);
+  const playedRatio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const channelLabel = props.audio.channels === 2 ? "STEREO" : "MONO";
   const formatDetails = [
-    props.audio.codec,
+    props.audio.format,
+    props.audio.codec && props.audio.codec !== props.audio.format ? props.audio.codec : null,
     props.audio.sampleRate ? `${props.audio.sampleRate} HZ` : null,
     props.audio.bitsPerSample ? `${props.audio.bitsPerSample} BIT` : null,
     props.audio.channels ? channelLabel : null,
   ].filter(Boolean);
+  const waveformBars = props.audio.waveform.length
+    ? props.audio.waveform
+    : Array.from({ length: 48 }, () => 0);
 
   return (
     <div className={audioPreviewDisplayClass}>
@@ -137,11 +143,11 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
         <div className="audio-visual" aria-hidden="true">
           <AudioLines className="audio-icon" size={28} />
           <div className="audio-bars">
-            {Array.from({ length: 18 }).map((_, index) => (
+            {waveformBars.map((value, index) => (
               <span
                 key={index}
-                className={paused ? undefined : "playing"}
-                style={{ animationDelay: `${index * 42}ms` }}
+                className={clsx((index + 1) / waveformBars.length <= playedRatio && "played")}
+                style={{ height: `${waveformBarHeight(value)}%` }}
               />
             ))}
           </div>
@@ -213,6 +219,11 @@ function formatAudioTime(value: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function waveformBarHeight(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return 6;
+  return Math.max(8, Math.min(100, value * 100));
+}
+
 const audioPreviewDisplayClass = css`
   flex: 1;
   min-height: 0;
@@ -272,20 +283,25 @@ const audioPreviewDisplayClass = css`
     height: 42px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
   }
 
   .audio-bars span {
     width: 100%;
-    height: 18%;
     min-width: 3px;
     background: var(--green-sel);
-    opacity: 0.4;
+    opacity: 0.36;
     box-shadow: 0 0 6px rgba(0, 252, 0, 0.28);
+    transition:
+      height 80ms linear,
+      opacity 120ms linear,
+      background-color 120ms linear;
   }
 
-  .audio-bars span.playing {
-    animation: audio-meter 720ms ease-in-out infinite alternate;
+  .audio-bars span.played {
+    opacity: 0.92;
+    background: var(--hover-text);
+    box-shadow: var(--hover-text-glow);
   }
 
   .audio-title {
@@ -404,15 +420,4 @@ const audioPreviewDisplayClass = css`
     color: var(--danger);
   }
 
-  @keyframes audio-meter {
-    from {
-      height: 18%;
-      opacity: 0.4;
-    }
-
-    to {
-      height: 96%;
-      opacity: 0.92;
-    }
-  }
 `;

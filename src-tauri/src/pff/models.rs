@@ -120,6 +120,7 @@ pub struct AudioPreview {
     pub channels: Option<u16>,
     pub bits_per_sample: Option<u16>,
     pub duration_seconds: Option<f64>,
+    pub waveform: Vec<f32>,
 }
 
 #[derive(Debug, Deserialize)]
