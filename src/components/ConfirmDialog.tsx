@@ -1,9 +1,10 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
 import { AlertTriangle } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { PanelCorners } from "@/components/panel/PanelCorners";
+import { playTypewriterClick, playTypewriterReturn } from "@/lib/sounds";
 
 export type ConfirmDialogProps = {
   title: string;
@@ -23,6 +24,44 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
     900,
     (messageCharacters.length + detailCharacters.length) * 8,
   );
+
+  useEffect(() => {
+    if (props.closing || prefersReducedMotion()) return;
+
+    const timerIds: number[] = [];
+
+    messageCharacters.forEach((character, index) => {
+      if (character.trim().length === 0) return;
+
+      timerIds.push(
+        window.setTimeout(() => {
+          playTypewriterClick();
+        }, 720 + Math.min(index, 120) * 8),
+      );
+    });
+
+    if (detailCharacters.length > 0) {
+      timerIds.push(
+        window.setTimeout(() => {
+          playTypewriterReturn();
+        }, 800 + Math.min(messageCharacters.length, 120) * 8),
+      );
+    }
+
+    detailCharacters.forEach((character, index) => {
+      if (character.trim().length === 0) return;
+
+      timerIds.push(
+        window.setTimeout(() => {
+          playTypewriterClick();
+        }, 800 + Math.min(messageCharacters.length + index, 140) * 8),
+      );
+    });
+
+    return () => {
+      timerIds.forEach((timerId) => window.clearTimeout(timerId));
+    };
+  }, [props.closing, props.detail, props.message]);
 
   return (
     <div
@@ -108,6 +147,10 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       </section>
     </div>
   );
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 const confirmDialogOverlayClass = css`
