@@ -15,6 +15,7 @@ type AudioMeterGraph = {
   context: AudioContext;
   analyser: AnalyserNode;
   source: MediaElementAudioSourceNode;
+  gain: GainNode;
   frequencyData: Uint8Array;
   frameId: number | null;
 };
@@ -62,7 +63,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
 
     audio.load();
-    audio.volume = volume;
+    applyPlaybackVolume(volume);
 
     const playPromise = audio.play();
     if (playPromise) {
@@ -75,8 +76,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   }, [audioSrc, props.animationKey, props.audio.durationSeconds]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) audio.volume = volume;
+    applyPlaybackVolume(volume);
   }, [volume]);
 
   useEffect(() => {
@@ -105,6 +105,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
       cancelAnimationFrame(graph.frameId);
     }
     graph.source.disconnect();
+    graph.gain.disconnect();
     graph.analyser.disconnect();
     void graph.context.close().catch(() => undefined);
     audioMeterRef.current = null;
@@ -127,8 +128,10 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
       const context = new AudioContextClass({ latencyHint: "interactive" });
       const analyser = context.createAnalyser();
+      const gain = context.createGain();
       analyser.fftSize = 1024;
       analyser.smoothingTimeConstant = 0.58;
+      gain.gain.value = volume;
 
       let source: MediaElementAudioSourceNode;
       try {
@@ -138,7 +141,8 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
         return;
       }
 
-      source.connect(analyser);
+      source.connect(gain);
+      gain.connect(analyser);
       analyser.connect(context.destination);
 
       graph = {
@@ -146,10 +150,12 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
         context,
         analyser,
         source,
+        gain,
         frequencyData: new Uint8Array(analyser.frequencyBinCount),
         frameId: null,
       };
       audioMeterRef.current = graph;
+      audio.volume = 1;
     }
 
     if (graph.context.state === "suspended") {
@@ -228,12 +234,26 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
   function changeVolume(value: string) {
     const nextVolume = Number(value);
-    const audio = audioRef.current;
     setVolume(nextVolume);
-    if (audio) audio.volume = nextVolume;
+    applyPlaybackVolume(nextVolume);
+  }
+
+  function applyPlaybackVolume(nextVolume: number) {
+    const audio = audioRef.current;
+    const clampedVolume = Math.max(0, Math.min(2, nextVolume));
+    const graph = audioMeterRef.current;
+
+    if (graph) {
+      graph.gain.gain.value = clampedVolume;
+      if (audio) audio.volume = 1;
+      return;
+    }
+
+    if (audio) audio.volume = Math.min(1, clampedVolume);
   }
 
   const progressMax = Math.max(duration, 0.001);
+  const volumePercent = Math.round(volume * 100);
   const channelLabel = props.audio.channels === 2 ? "STEREO" : "MONO";
   const formatDetails = [
     props.audio.codec,
@@ -323,12 +343,13 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
           <input
             type="range"
             min={0}
-            max={1}
+            max={2}
             step={0.01}
             value={volume}
             onChange={(event) => changeVolume(event.currentTarget.value)}
             aria-label="Audio preview volume"
           />
+          <span className="volume-value">{volumePercent}%</span>
         </div>
 
         {loadFailed && <div className="audio-message error">AUDIO DECODE FAILED</div>}
@@ -519,7 +540,8 @@ const audioPreviewDisplayClass = css`
     text-shadow: var(--hover-text-glow);
   }
 
-  .time {
+  .time,
+  .volume-value {
     min-width: 38px;
     color: var(--text-dim);
     font-size: 10px;
@@ -573,6 +595,11 @@ const audioPreviewDisplayClass = css`
   .volume-row {
     color: var(--text-dim);
     padding-left: 72px;
+  }
+
+  .volume-value {
+    min-width: 42px;
+    text-align: right;
   }
 
   .audio-message {
