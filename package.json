@@ -9,8 +9,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:build:windows-msvc": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
-    "tauri:build:windows-msvc:debug": "tauri build --debug --runner cargo-xwin --target x86_64-pc-windows-msvc"
+    "tauri:build:windows-msvc": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle",
+    "tauri:build:windows-msvc:debug": "tauri build --debug --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle"
   },
   "dependencies": {
     "@emotion/css": "^11.13.5",

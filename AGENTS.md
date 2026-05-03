@@ -21,8 +21,8 @@
 - 前端构建：`pnpm build`
 - Tauri 开发：`pnpm tauri dev`
 - Tauri 调试构建：`pnpm tauri build --debug`
-- Windows MSVC 构建：`pnpm tauri:build:windows-msvc`
-- Windows MSVC 调试构建：`pnpm tauri:build:windows-msvc:debug`
+- Windows MSVC 构建单文件 exe：`pnpm tauri:build:windows-msvc`
+- Windows MSVC 调试构建单文件 exe：`pnpm tauri:build:windows-msvc:debug`
 - Rust 测试：`cd src-tauri && cargo test`
 
 `src-tauri/tauri.conf.json` 的 `beforeDevCommand` 和 `beforeBuildCommand` 必须保持 pnpm 命令。
