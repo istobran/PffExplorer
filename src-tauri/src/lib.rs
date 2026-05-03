@@ -9,12 +9,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             config::load_app_config,
             config::save_app_config,
-            pff::load_pff_file,
-            pff::load_pff_project,
-            pff::load_pff_paths,
-            pff::scan_pff_project,
-            pff::preview_entry,
-            pff::export_entry
+            pff::commands::load_pff_file,
+            pff::commands::load_pff_project,
+            pff::commands::load_pff_paths,
+            pff::commands::scan_pff_project,
+            pff::commands::preview_entry,
+            pff::commands::export_entry
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
