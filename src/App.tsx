@@ -180,6 +180,27 @@ function App() {
   }, [focusedKey, selectedKeys, visibleRows]);
 
   useEffect(() => {
+    function handleGlobalAudioShortcuts(event: globalThis.KeyboardEvent) {
+      if (!isPlainKeyShortcut(event) || isEditableShortcutTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      if (key !== "b" && key !== "m") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (key === "b") {
+        toggleBackgroundMusic();
+      } else {
+        toggleSoundMuted();
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalAudioShortcuts, true);
+    return () => window.removeEventListener("keydown", handleGlobalAudioShortcuts, true);
+  }, [backgroundMusicEnabled, soundMuted]);
+
+  useEffect(() => {
     const visibleKeySet = new Set(visibleRows.map((row) => entryKey(row)));
 
     setSelectedKeys((current) => {
@@ -918,6 +939,28 @@ function isSelectAllShortcut(event: globalThis.KeyboardEvent) {
     !event.altKey &&
     (event.ctrlKey || event.metaKey) &&
     event.key.toLowerCase() === "a"
+  );
+}
+
+function isPlainKeyShortcut(event: globalThis.KeyboardEvent) {
+  return (
+    !event.repeat &&
+    !event.isComposing &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  );
+}
+
+function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+
+  const tagName = target.tagName.toLowerCase();
+  return (
+    target.isContentEditable ||
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select"
   );
 }
 
