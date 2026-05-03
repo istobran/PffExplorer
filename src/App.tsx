@@ -554,15 +554,14 @@ function App() {
     if (!firstVisibleRow) return;
 
     const visibleKeys = visibleRows.map((row) => entryKey(row));
-    const nextFocusKey =
+    const nextAnchorKey =
       focusedKey && visibleKeys.includes(focusedKey)
         ? focusedKey
         : entryKey(firstVisibleRow);
 
     playResourceSelectionSound();
     setSelectedKeys(new Set(visibleKeys));
-    setSelectionAnchorKey(nextFocusKey);
-    focusResource(nextFocusKey);
+    setSelectionAnchorKey(nextAnchorKey);
   }
 
   function resourceRangeKeys(startIndex: number, endIndex: number) {

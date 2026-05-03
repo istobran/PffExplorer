@@ -34,6 +34,8 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 html,
@@ -76,8 +78,16 @@ body::after {
 }
 
 input,
-button {
+button,
+textarea,
+select {
   font: inherit;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 button {
