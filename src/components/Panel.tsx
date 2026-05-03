@@ -31,19 +31,6 @@ const panelClass = css`
   overflow: hidden;
   min-height: 0;
 
-  &::before {
-    content: "";
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    width: 12px;
-    height: 12px;
-    border: 3px solid var(--green-sel);
-    border-right: none;
-    border-bottom: none;
-    z-index: 2;
-  }
-
   .panel-header {
     display: flex;
     align-items: center;
