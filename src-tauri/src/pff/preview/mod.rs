@@ -32,7 +32,7 @@ pub(crate) fn preview_from_bytes(
             Ok(image) => {
                 let image_format = image.format.clone();
                 let mut transforms = transforms;
-                transforms.push(format!("{image_format}->PNG"));
+                transforms.push(image_format);
 
                 return PreviewResponse {
                     status: PreviewStatus::Image,

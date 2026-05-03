@@ -166,7 +166,7 @@ impl PffArchive {
 
         if is_rtxt(&data) {
             data = parse_rtxt(&data)?.to_toml().into_bytes();
-            transforms.push("RTXT->TOML".to_string());
+            transforms.push("RTXT".to_string());
         }
 
         Ok(ExtractedData { data, transforms })

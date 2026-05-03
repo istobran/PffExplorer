@@ -14,7 +14,9 @@ export function PreviewMeta(props: PreviewMetaProps) {
       <Tag>{formatBytes(props.preview.byteLen)}</Tag>
       <Tag>{fileExtensionLabel(props.entry.name)}</Tag>
       <Tag>
-        {props.preview.transforms.length ? props.preview.transforms.join(" + ") : "RAW"}
+        {props.preview.transforms.length
+          ? props.preview.transforms.map(sourceTransformLabel).join(" + ")
+          : "RAW"}
       </Tag>
       {props.preview.image && (
         <Tag active>
@@ -34,3 +36,7 @@ const previewMetaClass = css`
   margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
 `;
+
+function sourceTransformLabel(transform: string) {
+  return transform.split("->", 1)[0].trim() || transform;
+}

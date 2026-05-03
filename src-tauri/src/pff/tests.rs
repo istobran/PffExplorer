@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::path::{Path, PathBuf};
 
 use flate2::{write::ZlibEncoder, Compression};
@@ -109,6 +109,34 @@ fn previews_wav_audio() {
         .data_url
         .as_deref()
         .is_some_and(|url| url.starts_with("data:audio/wav;base64,")));
+}
+
+#[test]
+fn preview_image_transforms_show_source_format_only() {
+    let data = fixture_png();
+    let entry = PffEntry {
+        table_index: 0,
+        flags: 0,
+        offset: 20,
+        size: data.len() as u32,
+        timestamp: 0,
+        name: "tiny.png".to_string(),
+        checksum: None,
+    };
+    let preview = preview_from_bytes(
+        Path::new("fixture.pff"),
+        &entry,
+        data,
+        vec!["BFC1".to_string()],
+        None,
+    );
+
+    assert!(matches!(preview.status, PreviewStatus::Image));
+    assert_eq!(preview.transforms, vec!["BFC1", "PNG"]);
+    assert!(preview
+        .transforms
+        .iter()
+        .all(|transform| !transform.contains("->")));
 }
 
 #[test]
@@ -226,6 +254,15 @@ fn fixture_entry(_index: u32, name: &str, data: &[u8]) -> FixtureEntry {
 fn fixture_wav() -> Vec<u8> {
     let pcm = [0x00_u8, 0x40, 0x80, 0xff];
     write_pcm_wav(8000, 1, 8, &pcm)
+}
+
+fn fixture_png() -> Vec<u8> {
+    let image = image::RgbaImage::from_pixel(1, 1, image::Rgba([0, 255, 0, 255]));
+    let mut cursor = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(&mut cursor, image::ImageFormat::Png)
+        .unwrap();
+    cursor.into_inner()
 }
 
 fn write_fixture(path: &Path, fixtures: Vec<FixtureEntry>) {
