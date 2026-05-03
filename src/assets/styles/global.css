@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "Share Tech Mono";
+  src: url("../fonts/share-tech-mono.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "VT323";
+  src: url("../fonts/vt323.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --bg: #050c05;
   --panel-bg: #070e07;
