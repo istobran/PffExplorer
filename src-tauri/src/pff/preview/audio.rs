@@ -17,7 +17,6 @@ use super::util::extension;
 
 pub(super) struct AudioPreviewResult {
     pub(super) preview: AudioPreview,
-    pub(super) transform: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,7 +67,6 @@ pub(super) fn audio_preview_from_bytes_with_cache(
             bits_per_sample: decoded.bits_per_sample,
             duration_seconds: decoded.duration_seconds,
         },
-        transform: Some("SYMPHONIA->PCM WAV".to_string()),
     })
 }
 

@@ -65,11 +65,6 @@ pub(crate) fn preview_from_bytes(
         match audio_preview_from_bytes_with_cache(&entry.name, &data, preview_cache_dir, &cache_key)
         {
             Ok(audio_result) => {
-                let mut transforms = transforms;
-                if let Some(transform) = audio_result.transform {
-                    transforms.push(transform);
-                }
-
                 return PreviewResponse {
                     status: PreviewStatus::Audio,
                     text: None,
