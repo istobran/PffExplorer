@@ -19,33 +19,33 @@ const panelCornerClass = css`
   width: 12px;
   height: 12px;
   border: 3px solid var(--green-sel);
-  z-index: 2;
+  z-index: 8;
   pointer-events: none;
 
   &.corner-tl {
-    top: -1px;
-    left: -1px;
+    top: 0;
+    left: 0;
     border-right: none;
     border-bottom: none;
   }
 
   &.corner-br {
-    right: -1px;
-    bottom: -1px;
+    right: 0;
+    bottom: 0;
     border-left: none;
     border-top: none;
   }
 
   &.corner-tr {
-    top: -1px;
-    right: -1px;
+    top: 0;
+    right: 0;
     border-left: none;
     border-bottom: none;
   }
 
   &.corner-bl {
-    bottom: -1px;
-    left: -1px;
+    bottom: 0;
+    left: 0;
     border-right: none;
     border-top: none;
   }

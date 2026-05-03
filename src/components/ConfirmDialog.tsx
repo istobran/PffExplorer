@@ -8,6 +8,7 @@ import { PanelCorners } from "@/components/panel/PanelCorners";
 export type ConfirmDialogProps = {
   title: string;
   message: string;
+  detail?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   closing?: boolean;
@@ -17,7 +18,11 @@ export type ConfirmDialogProps = {
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
   const messageCharacters = Array.from(props.message);
-  const messagePrintMs = Math.min(900, messageCharacters.length * 8);
+  const detailCharacters = Array.from(props.detail ?? "");
+  const messagePrintMs = Math.min(
+    900,
+    (messageCharacters.length + detailCharacters.length) * 8,
+  );
 
   return (
     <div
@@ -47,10 +52,6 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         <div className="dialog-body">
           <AlertTriangle size={22} className="dialog-icon" />
           <div className="message-shell">
-            <div className="system-lines" aria-hidden>
-              <span>&gt; INIT SIGNAL</span>
-              <span>&gt; CHANNEL READY</span>
-            </div>
             <p aria-label={props.message}>
               <span className="message-prefix" aria-hidden>
                 &gt;&nbsp;
@@ -69,8 +70,27 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
                   </span>
                 ),
               )}
-              <span className="terminal-cursor" aria-hidden />
+              {!props.detail && <span className="terminal-cursor" aria-hidden />}
             </p>
+            {props.detail && (
+              <p className="message-detail" aria-label={props.detail}>
+                {detailCharacters.map((character, index) => (
+                  <span
+                    key={`${character}-${index}`}
+                    className="message-char detail-char"
+                    aria-hidden
+                    style={{
+                      animationDelay: `${
+                        800 + Math.min(messageCharacters.length + index, 140) * 8
+                      }ms`,
+                    }}
+                  >
+                    {character === " " ? "\u00a0" : character}
+                  </span>
+                ))}
+                <span className="terminal-cursor" aria-hidden />
+              </p>
+            )}
           </div>
         </div>
         <footer className="dialog-actions">
@@ -258,35 +278,19 @@ const confirmDialogOverlayClass = css`
     min-width: 0;
   }
 
-  .system-lines {
-    display: grid;
-    gap: 2px;
-    margin-bottom: 8px;
-    color: var(--text-dim);
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-
-    span {
-      opacity: 0;
-      animation: status-line-in 80ms steps(2, end) both;
-    }
-
-    span:nth-of-type(1) {
-      animation-delay: 560ms;
-    }
-
-    span:nth-of-type(2) {
-      animation-delay: 640ms;
-    }
-  }
-
   p {
     margin: 0;
     line-height: 1.55;
     font-size: 12px;
     color: var(--green-hi);
     min-height: 38px;
+  }
+
+  .message-detail {
+    min-height: 0;
+    margin-top: 6px;
+    color: var(--text-dim);
+    overflow-wrap: anywhere;
   }
 
   .message-prefix,
@@ -532,17 +536,6 @@ const confirmDialogOverlayClass = css`
     }
     to {
       opacity: 0;
-    }
-  }
-
-  @keyframes status-line-in {
-    from {
-      opacity: 0;
-      transform: translateX(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
     }
   }
 

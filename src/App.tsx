@@ -74,6 +74,7 @@ type LoadOpenedPffPathsOptions = {
 type ConfirmDialogState = {
   title: string;
   message: string;
+  detail?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   closing: boolean;
@@ -631,7 +632,8 @@ function App() {
     if (groupByPackage) {
       const accepted = await showConfirmDialog({
         title: "BATCH EXPORT",
-        message: `Selected resources will be exported into package folders under:\n${outputDirectory}`,
+        message: "Selected resources will be exported into package folders under:",
+        detail: outputDirectory,
         confirmLabel: "EXPORT",
         cancelLabel: "CANCEL",
       });
@@ -826,6 +828,7 @@ function App() {
         <ConfirmDialog
           title={confirmDialogState.title}
           message={confirmDialogState.message}
+          detail={confirmDialogState.detail}
           confirmLabel={confirmDialogState.confirmLabel}
           cancelLabel={confirmDialogState.cancelLabel}
           closing={confirmDialogState.closing}
