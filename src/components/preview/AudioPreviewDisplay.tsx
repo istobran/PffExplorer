@@ -114,8 +114,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const playedRatio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const channelLabel = props.audio.channels === 2 ? "STEREO" : "MONO";
   const formatDetails = [
-    props.audio.format,
-    props.audio.codec && props.audio.codec !== props.audio.format ? props.audio.codec : null,
+    props.audio.codec,
     props.audio.sampleRate ? `${props.audio.sampleRate} HZ` : null,
     props.audio.bitsPerSample ? `${props.audio.bitsPerSample} BIT` : null,
     props.audio.channels ? channelLabel : null,

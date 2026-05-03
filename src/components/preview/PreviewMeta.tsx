@@ -21,7 +21,7 @@ export function PreviewMeta(props: PreviewMetaProps) {
           {props.preview.image.width}x{props.preview.image.height}
         </Tag>
       )}
-      {props.preview.audio && <Tag active>{props.preview.audio.format}</Tag>}
+      {props.preview.audio && <Tag active>{props.preview.audio.codec}</Tag>}
     </div>
   );
 }

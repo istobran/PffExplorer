@@ -204,11 +204,21 @@ fn concise_codec_label(codec_params: &CodecParameters) -> String {
         return codec_type_label(codec_params.codec);
     };
 
-    let short_name = descriptor.short_name.to_ascii_uppercase();
-    if short_name.starts_with("PCM") {
-        "PCM".to_string()
-    } else {
-        short_name.replace('_', " ")
+    match descriptor.short_name {
+        "adpcm_ima_wav" => "IMA ADPCM".to_string(),
+        "adpcm_ms" => "MS ADPCM".to_string(),
+        "mp1" => "MP1".to_string(),
+        "mp2" => "MP2".to_string(),
+        "mp3" => "MP3".to_string(),
+        short_name if short_name.starts_with("pcm") => "PCM".to_string(),
+        short_name => {
+            let label = short_name.replace('_', " ").to_ascii_uppercase();
+            if label.starts_with("ADPCM ") {
+                label.replace("ADPCM ", "") + " ADPCM"
+            } else {
+                label
+            }
+        }
     }
 }
 
