@@ -1,5 +1,4 @@
-import { css, keyframes } from "@emotion/css";
-import df1ProgressFrame from "@/assets/images/df1-ui/hsld-211.png";
+import { css } from "@emotion/css";
 
 export type StatusProgressProps = {
   label: string;
@@ -7,29 +6,21 @@ export type StatusProgressProps = {
 };
 
 export function StatusProgress(props: StatusProgressProps) {
+  const progress = Math.max(0, Math.min(100, props.progress ?? 0));
+
   return (
     <div className={statusProgressClass}>
       <div className="prog-label">{props.label}</div>
       <div className="prog-outer">
         <div
-          className="prog-inner"
-          style={{ width: `${props.progress == null ? 0 : props.progress}%` }}
+          className="prog-fill"
+          style={{ width: `${progress}%` }}
         />
       </div>
       <div className="prog-pct">{props.progress == null ? "-" : `${props.progress}%`}</div>
     </div>
   );
 }
-
-const statusProgressScroll = keyframes`
-  from {
-    background-position: 0 0;
-  }
-
-  to {
-    background-position: 7px 0;
-  }
-`;
 
 const statusProgressClass = css`
   flex: 1;
@@ -48,40 +39,18 @@ const statusProgressClass = css`
 
   .prog-outer {
     position: relative;
-    width: min(211px, 28vw);
-    height: 20px;
-    background: #030803;
+    width: min(216px, 28vw);
+    height: 10px;
+    background: #020602;
+    border: 1px solid var(--green-dim);
     overflow: hidden;
   }
 
-  .prog-outer::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: url(${df1ProgressFrame}) center / 100% 100% no-repeat;
-    image-rendering: pixelated;
-  }
-
-  .prog-inner {
-    position: absolute;
-    top: 5px;
-    left: 2px;
-    z-index: 0;
-    height: 10px;
-    max-width: calc(100% - 4px);
-    width: 0%;
-    background: repeating-linear-gradient(
-      90deg,
-      var(--green-sel) 0px,
-      var(--green-sel) 4px,
-      #004000 4px,
-      #004000 6px
-    );
-    background-size: 6px 100%;
-    box-shadow: 0 0 8px rgba(0, 252, 0, 0.32);
-    transition: width 0.24s linear;
-    animation: ${statusProgressScroll} 0.5s linear infinite;
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-dim), var(--green-sel));
+    box-shadow: 0 0 8px rgba(0, 252, 0, 0.22);
+    transition: width 0.18s linear;
   }
 
   .prog-pct {

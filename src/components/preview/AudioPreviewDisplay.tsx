@@ -4,8 +4,6 @@ import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-rea
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
 import { playUiHover, playUiPress } from "@/lib/sounds";
-import df1SliderTrack from "@/assets/images/df1-ui/hsld-211.png";
-import df1SliderThumb from "@/assets/images/df1-ui/slider.png";
 
 export type AudioPreviewDisplayProps = {
   audio: AudioPreview;
@@ -349,7 +347,7 @@ const audioPreviewDisplayClass = css`
   input[type="range"] {
     flex: 1;
     min-width: 0;
-    height: 20px;
+    height: 18px;
     appearance: none;
     -webkit-appearance: none;
     background: transparent;
@@ -358,36 +356,35 @@ const audioPreviewDisplayClass = css`
   }
 
   input[type="range"]::-webkit-slider-runnable-track {
-    height: 20px;
-    background: url(${df1SliderTrack}) center / 100% 20px no-repeat;
-    image-rendering: pixelated;
+    height: 8px;
+    border: 1px solid var(--green-dim);
+    background: #020602;
   }
 
   input[type="range"]::-webkit-slider-thumb {
-    width: 3px;
-    height: 19px;
-    margin-top: 0;
-    border: 0;
+    width: 7px;
+    height: 18px;
+    margin-top: -5px;
+    border: 1px solid var(--green-sel);
     appearance: none;
     -webkit-appearance: none;
-    background: url(${df1SliderThumb}) center / 3px 19px no-repeat;
-    image-rendering: pixelated;
+    background: var(--green);
+    box-shadow: 0 0 6px rgba(0, 252, 0, 0.24);
   }
 
   input[type="range"]::-moz-range-track {
-    height: 20px;
-    border: 0;
-    background: url(${df1SliderTrack}) center / 100% 20px no-repeat;
-    image-rendering: pixelated;
+    height: 8px;
+    border: 1px solid var(--green-dim);
+    background: #020602;
   }
 
   input[type="range"]::-moz-range-thumb {
-    width: 3px;
-    height: 19px;
-    border: 0;
+    width: 7px;
+    height: 18px;
+    border: 1px solid var(--green-sel);
     border-radius: 0;
-    background: url(${df1SliderThumb}) center / 3px 19px no-repeat;
-    image-rendering: pixelated;
+    background: var(--green);
+    box-shadow: 0 0 6px rgba(0, 252, 0, 0.24);
   }
 
   .volume-row {
