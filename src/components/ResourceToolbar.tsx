@@ -1,5 +1,5 @@
 import { css } from "@emotion/css";
-import { Download } from "lucide-react";
+import { Download, LoaderCircle } from "lucide-react";
 import { FormatFilterDropdown } from "@/components/toolbar/FormatFilterDropdown";
 import { SearchBox } from "@/components/toolbar/SearchBox";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
@@ -10,6 +10,7 @@ export type ResourceToolbarProps = {
   formatOptions: string[];
   selectedFormats: string[];
   selectionCount: number;
+  exporting: boolean;
   onSearch: (value: string) => void;
   onToggleFormat: (format: string) => void;
   onClearFormats: () => void;
@@ -31,12 +32,22 @@ export function ResourceToolbar(props: ResourceToolbarProps) {
       <ToolbarSeparator />
       <ToolbarButton
         className="action"
-        disabled={props.selectionCount === 0}
+        disabled={props.selectionCount === 0 || props.exporting}
         onClick={props.onExport}
         title="Export exact bytes stored in the archive"
       >
-        <Download size={12} />
-        <span>{props.selectionCount > 1 ? `EXPORT (${props.selectionCount})` : "EXPORT"}</span>
+        {props.exporting ? (
+          <LoaderCircle className="toolbar-spin" size={12} />
+        ) : (
+          <Download size={12} />
+        )}
+        <span>
+          {props.exporting
+            ? "EXPORTING"
+            : props.selectionCount > 1
+              ? `EXPORT (${props.selectionCount})`
+              : "EXPORT"}
+        </span>
       </ToolbarButton>
     </div>
   );
@@ -61,5 +72,15 @@ const toolbarClass = css`
     color: var(--text-dim);
     text-transform: uppercase;
     white-space: nowrap;
+  }
+
+  .toolbar-spin {
+    animation: resource-toolbar-spin 0.8s linear infinite;
+  }
+
+  @keyframes resource-toolbar-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;

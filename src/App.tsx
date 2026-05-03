@@ -95,6 +95,7 @@ function App() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [confirmDialogState, setConfirmDialogState] =
     useState<ConfirmDialogState | null>(null);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
@@ -502,6 +503,22 @@ function App() {
     }
   }
 
+  function selectAllVisibleResources() {
+    const firstVisibleRow = visibleRows[0];
+    if (!firstVisibleRow) return;
+
+    const visibleKeys = visibleRows.map((row) => entryKey(row));
+    const nextFocusKey =
+      focusedKey && visibleKeys.includes(focusedKey)
+        ? focusedKey
+        : entryKey(firstVisibleRow);
+
+    playResourceSelectionSound();
+    setSelectedKeys(new Set(visibleKeys));
+    setSelectionAnchorKey(nextFocusKey);
+    focusResource(nextFocusKey);
+  }
+
   function resourceRangeKeys(startIndex: number, endIndex: number) {
     const lower = Math.min(startIndex, endIndex);
     const upper = Math.max(startIndex, endIndex);
@@ -567,6 +584,7 @@ function App() {
   }
 
   async function exportSelected() {
+    if (exporting) return;
     if (selectedRows.length === 0) return;
 
     if (selectedRows.length === 1) {
@@ -584,6 +602,7 @@ function App() {
     });
     if (!outputPath) return;
 
+    setExporting(true);
     setStatus({
       label: "EXPORTING",
       target: entry.name,
@@ -614,6 +633,8 @@ function App() {
         progress: null,
       });
       await message(String(error), { title: "Export failed", kind: "error" });
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -644,6 +665,7 @@ function App() {
     const failures: string[] = [];
     let exportedCount = 0;
 
+    setExporting(true);
     setStatus({
       label: "EXPORTING",
       target: `0/${entries.length}`,
@@ -651,57 +673,65 @@ function App() {
       progress: 0,
     });
 
-    for (const [index, entry] of entries.entries()) {
-      try {
-        const outputPath = await buildUniqueBatchExportPath(
-          outputDirectory,
-          entry,
-          groupByPackage,
-          usedOutputPaths,
-        );
-        await invoke<ExportResult>("export_entry", {
-          request: {
-            archivePath: entry.archivePath,
-            entryIndex: entry.tableIndex,
-            outputPath,
-            mode: "raw",
-          },
+    try {
+      for (const [index, entry] of entries.entries()) {
+        try {
+          const outputPath = await buildUniqueBatchExportPath(
+            outputDirectory,
+            entry,
+            groupByPackage,
+            usedOutputPaths,
+          );
+          await invoke<ExportResult>("export_entry", {
+            request: {
+              archivePath: entry.archivePath,
+              entryIndex: entry.tableIndex,
+              outputPath,
+              mode: "raw",
+            },
+          });
+          exportedCount += 1;
+        } catch (error) {
+          failures.push(`${entry.archiveName} / ${entry.name}: ${String(error)}`);
+        }
+
+        setStatus({
+          label: "EXPORTING",
+          target: `${index + 1}/${entries.length}`,
+          progressLabel: "EXPORT",
+          progress: Math.round(((index + 1) / entries.length) * 100),
         });
-        exportedCount += 1;
-      } catch (error) {
-        failures.push(`${entry.archiveName} / ${entry.name}: ${String(error)}`);
       }
 
+      const hasFailures = failures.length > 0;
       setStatus({
-        label: "EXPORTING",
-        target: `${index + 1}/${entries.length}`,
-        progressLabel: "EXPORT",
-        progress: Math.round(((index + 1) / entries.length) * 100),
+        label: hasFailures
+          ? exportedCount > 0
+            ? "READY WITH ERRORS"
+            : "ERROR"
+          : "READY",
+        target: `${exportedCount}/${entries.length} EXPORTED`,
+        progressLabel: "IDLE",
+        progress: null,
       });
-    }
 
-    const hasFailures = failures.length > 0;
-    setStatus({
-      label: hasFailures ? (exportedCount > 0 ? "READY WITH ERRORS" : "ERROR") : "READY",
-      target: `${exportedCount}/${entries.length} EXPORTED`,
-      progressLabel: "IDLE",
-      progress: null,
-    });
-
-    if (hasFailures) {
-      const shownFailures = failures.slice(0, 10).join("\n");
-      const hiddenCount = Math.max(0, failures.length - 10);
-      await message(
-        [
-          `Exported ${exportedCount} of ${entries.length} resources.`,
-          "",
-          shownFailures,
-          hiddenCount > 0 ? `...and ${hiddenCount} more failures.` : "",
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        { title: "Batch export completed with errors", kind: "warning" },
-      );
+      if (hasFailures) {
+        const shownFailures = failures.slice(0, 10).join("\n");
+        const hiddenCount = Math.max(0, failures.length - 10);
+        await message(
+          [
+            `Exported ${exportedCount} of ${entries.length} resources.`,
+            "",
+            shownFailures,
+            hiddenCount > 0 ? `...and ${hiddenCount} more failures.` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          { title: "Batch export completed with errors", kind: "warning" },
+        );
+      }
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -789,6 +819,7 @@ function App() {
                   formatOptions={availableFormats}
                   selectedFormats={selectedFormats}
                   selectionCount={selectedRows.length}
+                  exporting={exporting}
                   onSearch={setSearchText}
                   onToggleFormat={toggleFormat}
                   onClearFormats={clearFormats}
@@ -804,6 +835,7 @@ function App() {
                   showArchiveColumn={activeArchivePath === null}
                   onSort={changeSort}
                   onSelect={selectResource}
+                  onSelectAll={selectAllVisibleResources}
                   onDragSelect={dragSelectResources}
                 />
               </div>
