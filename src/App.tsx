@@ -80,7 +80,7 @@ type ConfirmDialogState = {
   resolve: (accepted: boolean) => void;
 };
 
-const CONFIRM_DIALOG_EXIT_MS = 280;
+const CONFIRM_DIALOG_EXIT_MS = 360;
 
 function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(EMPTY_SNAPSHOT);
