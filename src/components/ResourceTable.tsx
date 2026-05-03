@@ -27,7 +27,6 @@ export type ResourceTableProps = {
   showArchiveColumn: boolean;
   onSort: (key: SortKey) => void;
   onSelect: (entry: ResourceTableRow, mode: ResourceSelectionMode) => void;
-  onSelectAll: () => void;
   onDragSelect: (startIndex: number, endIndex: number, committed: boolean) => void;
 };
 
@@ -71,14 +70,6 @@ export function ResourceTable(props: ResourceTableProps) {
   }, []);
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
-      event.preventDefault();
-      if (props.rows.length === 0) return;
-
-      props.onSelectAll();
-      return;
-    }
-
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     if (props.rows.length === 0) return;
 

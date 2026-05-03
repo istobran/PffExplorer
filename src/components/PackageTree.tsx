@@ -11,6 +11,7 @@ export type PackageTreeProps = {
   activeArchivePath: string | null;
   onSelect: (path: string | null) => void;
   onCloseArchive: (path: string) => void;
+  onCloseAllArchives: () => void;
 };
 
 export function PackageTree(props: PackageTreeProps) {
@@ -51,6 +52,7 @@ export function PackageTree(props: PackageTreeProps) {
         active={props.activeArchivePath === null}
         all
         onClick={() => props.onSelect(null)}
+        onClose={props.archives.length > 0 ? props.onCloseAllArchives : undefined}
       />
       {props.archives.map((archive) => (
         <PackageTreeItem

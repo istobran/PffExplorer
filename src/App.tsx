@@ -165,6 +165,21 @@ function App() {
   );
 
   useEffect(() => {
+    function handleGlobalSelectAll(event: globalThis.KeyboardEvent) {
+      if (!isSelectAllShortcut(event)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.repeat || visibleRows.length === 0) return;
+      selectAllVisibleResources();
+    }
+
+    window.addEventListener("keydown", handleGlobalSelectAll, true);
+    return () => window.removeEventListener("keydown", handleGlobalSelectAll, true);
+  }, [focusedKey, selectedKeys, visibleRows]);
+
+  useEffect(() => {
     const visibleKeySet = new Set(visibleRows.map((row) => entryKey(row)));
 
     setSelectedKeys((current) => {
@@ -398,6 +413,16 @@ function App() {
         persist: true,
       },
     );
+  }
+
+  async function closeAllArchives() {
+    if (snapshot.archives.length === 0) return;
+
+    await loadOpenedPffPaths([], {
+      progressTarget: "ALL PACKAGES",
+      readyTarget: "ALL PACKAGES",
+      persist: true,
+    });
   }
 
   function openedArchivePaths() {
@@ -807,6 +832,7 @@ function App() {
             activeArchivePath={activeArchivePath}
             onSelect={selectArchive}
             onCloseArchive={closeArchive}
+            onCloseAllArchives={closeAllArchives}
           />
         </Panel>
 
@@ -835,7 +861,6 @@ function App() {
                   showArchiveColumn={activeArchivePath === null}
                   onSort={changeSort}
                   onSelect={selectResource}
-                  onSelectAll={selectAllVisibleResources}
                   onDragSelect={dragSelectResources}
                 />
               </div>
@@ -885,6 +910,15 @@ function fitWindowToCursorWorkAreaFromTitle(event: MouseEvent<HTMLElement>) {
   window.setTimeout(() => {
     void fitWindowToCursorWorkArea();
   }, 0);
+}
+
+function isSelectAllShortcut(event: globalThis.KeyboardEvent) {
+  return (
+    !event.isComposing &&
+    !event.altKey &&
+    (event.ctrlKey || event.metaKey) &&
+    event.key.toLowerCase() === "a"
+  );
 }
 
 async function runWindowAction(action: () => Promise<void>) {
