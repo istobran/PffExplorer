@@ -1,4 +1,5 @@
 import { css } from "@emotion/css";
+import clsx from "clsx";
 import { AlertTriangle } from "lucide-react";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { PanelCorners } from "@/components/panel/PanelCorners";
@@ -8,13 +9,17 @@ export type ConfirmDialogProps = {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  closing?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
   return (
-    <div className={confirmDialogOverlayClass} role="presentation">
+    <div
+      className={clsx(confirmDialogOverlayClass, props.closing && "closing")}
+      role="presentation"
+    >
       <section
         className="confirm-dialog"
         role="dialog"
@@ -33,10 +38,14 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
           <p>{props.message}</p>
         </div>
         <footer className="dialog-actions">
-          <ToolbarButton onClick={props.onCancel}>
+          <ToolbarButton disabled={props.closing} onClick={props.onCancel}>
             {props.cancelLabel ?? "CANCEL"}
           </ToolbarButton>
-          <ToolbarButton className="primary" onClick={props.onConfirm}>
+          <ToolbarButton
+            className="primary"
+            disabled={props.closing}
+            onClick={props.onConfirm}
+          >
             {props.confirmLabel ?? "OK"}
           </ToolbarButton>
         </footer>
@@ -54,6 +63,7 @@ const confirmDialogOverlayClass = css`
   justify-content: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.64);
+  animation: confirm-overlay-in 120ms ease-out both;
 
   .confirm-dialog {
     width: min(520px, 100%);
@@ -61,6 +71,16 @@ const confirmDialogOverlayClass = css`
     border: 1px solid var(--border-hi);
     position: relative;
     box-shadow: 0 0 0 1px rgba(0, 252, 0, 0.12), 0 0 28px rgba(0, 252, 0, 0.12);
+    transform-origin: center;
+    animation: confirm-dialog-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  &.closing {
+    animation: confirm-overlay-out 110ms ease-in both;
+  }
+
+  &.closing .confirm-dialog {
+    animation: confirm-dialog-out 110ms ease-in both;
   }
 
   .dialog-header {
@@ -121,5 +141,58 @@ const confirmDialogOverlayClass = css`
     color: var(--green-hi);
     border-color: var(--green-sel);
     background: var(--sel-row);
+  }
+
+  @keyframes confirm-overlay-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes confirm-overlay-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes confirm-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+      clip-path: inset(0 50% 0 50%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes confirm-dialog-out {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      clip-path: inset(0 0 0 0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(4px) scale(0.985);
+      clip-path: inset(0 50% 0 50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    &.closing,
+    .confirm-dialog,
+    &.closing .confirm-dialog {
+      animation-duration: 1ms;
+    }
   }
 `;

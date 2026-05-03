@@ -76,8 +76,11 @@ type ConfirmDialogState = {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  closing: boolean;
   resolve: (accepted: boolean) => void;
 };
+
+const CONFIRM_DIALOG_EXIT_MS = 120;
 
 function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(EMPTY_SNAPSHOT);
@@ -732,18 +735,21 @@ function App() {
     });
   }
 
-  function showConfirmDialog(options: Omit<ConfirmDialogState, "resolve">) {
+  function showConfirmDialog(options: Omit<ConfirmDialogState, "closing" | "resolve">) {
     return new Promise<boolean>((resolve) => {
-      setConfirmDialogState({ ...options, resolve });
+      setConfirmDialogState({ ...options, closing: false, resolve });
     });
   }
 
   function closeConfirmDialog(accepted: boolean) {
     const current = confirmDialogState;
-    if (!current) return;
+    if (!current || current.closing) return;
 
-    setConfirmDialogState(null);
-    current.resolve(accepted);
+    setConfirmDialogState({ ...current, closing: true });
+    window.setTimeout(() => {
+      setConfirmDialogState(null);
+      current.resolve(accepted);
+    }, CONFIRM_DIALOG_EXIT_MS);
   }
 
   return (
@@ -822,6 +828,7 @@ function App() {
           message={confirmDialogState.message}
           confirmLabel={confirmDialogState.confirmLabel}
           cancelLabel={confirmDialogState.cancelLabel}
+          closing={confirmDialogState.closing}
           onConfirm={() => closeConfirmDialog(true)}
           onCancel={() => closeConfirmDialog(false)}
         />
