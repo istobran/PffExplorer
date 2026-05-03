@@ -1,17 +1,25 @@
 import { css } from "@emotion/css";
+import type { MouseEvent } from "react";
 
 import deltaForceLogoUrl from "../../assets/images/df.svg";
 
-export type TitleLogoProps = Record<string, never>;
+export type TitleLogoProps = {
+  onStartDrag: (event: MouseEvent<HTMLElement>) => void;
+  onDoubleClick: (event: MouseEvent<HTMLElement>) => void;
+};
 
-export function TitleLogo(_props: TitleLogoProps) {
+export function TitleLogo(props: TitleLogoProps) {
   return (
-    <div className={titleLogoClass} data-tauri-drag-region>
-      <div className="logo-mark" data-tauri-drag-region>
-        <img src={deltaForceLogoUrl} alt="" draggable={false} data-tauri-drag-region />
+    <div
+      className={titleLogoClass}
+      onMouseDown={props.onStartDrag}
+      onDoubleClick={props.onDoubleClick}
+    >
+      <div className="logo-mark">
+        <img src={deltaForceLogoUrl} alt="" draggable={false} />
       </div>
-      <div className="logo-text" data-tauri-drag-region>
-        DELTA FORCE<span data-tauri-drag-region>TACTICAL TOOLS v1.0</span>
+      <div className="logo-text">
+        DELTA FORCE<span>TACTICAL TOOLS v1.0</span>
       </div>
     </div>
   );
@@ -24,6 +32,7 @@ const titleLogoClass = css`
   padding-left: 8px;
   border-left: 1px solid var(--border);
   flex-shrink: 0;
+  cursor: var(--cursor-crosshair), crosshair;
 
   .logo-mark {
     width: 30px;

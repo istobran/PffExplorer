@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   currentMonitor,
+  cursorPosition,
   getCurrentWindow,
+  monitorFromPoint,
   PhysicalPosition,
   PhysicalSize,
   primaryMonitor,
+  type Monitor,
 } from "@tauri-apps/api/window";
 import { message, open, save } from "@tauri-apps/plugin-dialog";
 import { PackageTree } from "@/components/PackageTree";
@@ -507,6 +510,8 @@ function App() {
         onToggleBackgroundMusic={toggleBackgroundMusic}
         onMinimize={minimizeWindow}
         onClose={closeWindow}
+        onStartDrag={startWindowDrag}
+        onTitleDoubleClick={fitWindowToCursorWorkAreaFromTitle}
       />
 
       <div className={contentClass}>
@@ -565,6 +570,21 @@ function App() {
   );
 }
 
+function startWindowDrag(event: MouseEvent<HTMLElement>) {
+  if (event.button !== 0 || event.detail > 1) return;
+
+  void runWindowAction(() => getCurrentWindow().startDragging());
+}
+
+function fitWindowToCursorWorkAreaFromTitle(event: MouseEvent<HTMLElement>) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  window.setTimeout(() => {
+    void fitWindowToCursorWorkArea();
+  }, 0);
+}
+
 async function runWindowAction(action: () => Promise<void>) {
   try {
     await action();
@@ -580,11 +600,7 @@ async function fitWindowToWorkArea() {
     const monitor = (await currentMonitor()) ?? (await primaryMonitor());
     if (!monitor) return;
 
-    const workArea = monitor.workArea;
-    await appWindow.setPosition(
-      new PhysicalPosition(workArea.position.x, workArea.position.y),
-    );
-    await appWindow.setSize(new PhysicalSize(workArea.size.width, workArea.size.height));
+    await fitWindowToMonitorWorkArea(monitor);
   } catch (error) {
     console.error("Window sizing failed", error);
   } finally {
@@ -594,6 +610,37 @@ async function fitWindowToWorkArea() {
       console.error("Window show failed", error);
     }
   }
+}
+
+async function fitWindowToCursorWorkArea() {
+  try {
+    const cursor = await cursorPosition();
+    const monitor =
+      (await monitorFromPoint(cursor.x, cursor.y)) ??
+      (await currentMonitor()) ??
+      (await primaryMonitor());
+    if (!monitor) return;
+
+    await fitWindowToMonitorWorkArea(monitor);
+  } catch (error) {
+    console.error("Window sizing failed", error);
+  }
+}
+
+async function fitWindowToMonitorWorkArea(monitor: Monitor) {
+  const appWindow = getCurrentWindow();
+  const workArea = monitor.workArea;
+
+  try {
+    if (await appWindow.isMaximized()) {
+      await appWindow.unmaximize();
+    }
+  } catch (error) {
+    console.error("Window unmaximize failed", error);
+  }
+
+  await appWindow.setPosition(new PhysicalPosition(workArea.position.x, workArea.position.y));
+  await appWindow.setSize(new PhysicalSize(workArea.size.width, workArea.size.height));
 }
 
 function singlePath(value: string | string[] | null): string | null {

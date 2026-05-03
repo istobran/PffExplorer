@@ -1,4 +1,5 @@
 import { css } from "@emotion/css";
+import type { MouseEvent } from "react";
 import { FileArchive, FolderOpen, Minus, X } from "lucide-react";
 import { BackgroundMusicToggleButton } from "@/components/titlebar/BackgroundMusicToggleButton";
 import { NavButton } from "@/components/titlebar/NavButton";
@@ -15,6 +16,8 @@ export type TitleBarProps = {
   onToggleBackgroundMusic: () => void;
   onMinimize: () => void;
   onClose: () => void;
+  onStartDrag: (event: MouseEvent<HTMLElement>) => void;
+  onTitleDoubleClick: (event: MouseEvent<HTMLElement>) => void;
 };
 
 export function TitleBar(props: TitleBarProps) {
@@ -26,12 +29,19 @@ export function TitleBar(props: TitleBarProps) {
       <NavButton icon={FileArchive} title="Open single PFF file" onClick={props.onOpenFile}>
         OPEN FILE
       </NavButton>
-      <div className="nav-center" data-tauri-drag-region>
-        <div className="nav-title" data-tauri-drag-region>
+      <div
+        className="nav-center"
+        onMouseDown={props.onStartDrag}
+        onDoubleClick={props.onTitleDoubleClick}
+      >
+        <div className="nav-title">
           PFF RESOURCE EXPLORER
         </div>
       </div>
-      <TitleLogo />
+      <TitleLogo
+        onStartDrag={props.onStartDrag}
+        onDoubleClick={props.onTitleDoubleClick}
+      />
       <BackgroundMusicToggleButton
         enabled={props.backgroundMusicEnabled}
         onToggle={props.onToggleBackgroundMusic}
@@ -61,6 +71,8 @@ const titleBarClass = css`
     align-items: center;
     justify-content: center;
     min-width: 0;
+    height: 100%;
+    cursor: var(--cursor-crosshair), crosshair;
   }
 
   .nav-title {
