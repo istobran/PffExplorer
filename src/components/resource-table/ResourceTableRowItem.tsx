@@ -1,5 +1,6 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
+import type { MouseEvent } from "react";
 import type { ResourceTableRow } from "@/types";
 import { formatBytes, hex32 } from "@/lib/format";
 import { FileExtensionPill } from "@/components/resource-table/FileExtensionPill";
@@ -14,10 +15,11 @@ import { playUiHover } from "@/lib/sounds";
 export type ResourceTableRowItemProps = {
   row: ResourceTableRow;
   selected: boolean;
+  focused: boolean;
   searchText: string;
   showArchiveColumn: boolean;
   top: number;
-  onSelect: () => void;
+  onSelect: (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
@@ -27,6 +29,7 @@ export function ResourceTableRowItem(props: ResourceTableRowItemProps) {
       className={clsx(
         resourceTableRowItemClass,
         props.selected && "selected",
+        props.focused && "focused",
         props.showArchiveColumn && "with-archive-column",
       )}
       style={{ transform: `translateY(${props.top}px)` }}
@@ -94,6 +97,10 @@ const resourceTableRowItemClass = css`
 
   &.selected {
     background: var(--sel-row);
+  }
+
+  &.focused {
+    box-shadow: inset 2px 0 0 var(--green-sel);
   }
 
   &.selected .td {

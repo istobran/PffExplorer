@@ -10,11 +10,15 @@ import {
   primaryMonitor,
   type Monitor,
 } from "@tauri-apps/api/window";
-import { message, open, save } from "@tauri-apps/plugin-dialog";
+import { join } from "@tauri-apps/api/path";
+import { confirm, message, open, save } from "@tauri-apps/plugin-dialog";
 import { PackageTree } from "@/components/PackageTree";
 import { Panel } from "@/components/Panel";
 import { PreviewPanel } from "@/components/PreviewPanel";
-import { ResourceTable } from "@/components/ResourceTable";
+import {
+  ResourceTable,
+  type ResourceSelectionMode,
+} from "@/components/ResourceTable";
 import { ResourceToolbar } from "@/components/ResourceToolbar";
 import { StatusBar } from "@/components/StatusBar";
 import { TitleBar } from "@/components/TitleBar";
@@ -40,6 +44,7 @@ import type {
   AppConfig,
   ExportResult,
   PreviewResponse,
+  ResourceTableRow,
   SortKey,
   StatusState,
   WorkspaceSnapshot,
@@ -72,7 +77,9 @@ function App() {
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortAsc, setSortAsc] = useState(true);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const [selectionAnchorKey, setSelectionAnchorKey] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
@@ -98,9 +105,9 @@ function App() {
   }, []);
 
   const selectedEntry = useMemo(() => {
-    if (!selectedKey) return null;
-    return snapshot.entries.find((entry) => entryKey(entry) === selectedKey) ?? null;
-  }, [selectedKey, snapshot.entries]);
+    if (!focusedKey) return null;
+    return snapshot.entries.find((entry) => entryKey(entry) === focusedKey) ?? null;
+  }, [focusedKey, snapshot.entries]);
 
   const visibleRows = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -135,6 +142,24 @@ function App() {
 
     return Array.from(formats).sort((a, b) => a.localeCompare(b));
   }, [snapshot.entries]);
+
+  const selectedRows = useMemo(
+    () => visibleRows.filter((row) => selectedKeys.has(entryKey(row))),
+    [selectedKeys, visibleRows],
+  );
+
+  useEffect(() => {
+    const visibleKeySet = new Set(visibleRows.map((row) => entryKey(row)));
+
+    setSelectedKeys((current) => {
+      const next = new Set([...current].filter((key) => visibleKeySet.has(key)));
+      return areSetsEqual(current, next) ? current : next;
+    });
+    setFocusedKey((current) => (current && visibleKeySet.has(current) ? current : null));
+    setSelectionAnchorKey((current) =>
+      current && visibleKeySet.has(current) ? current : null,
+    );
+  }, [visibleRows]);
 
   useEffect(() => {
     if (!selectedEntry) {
@@ -262,9 +287,7 @@ function App() {
     if (nextPaths.length === 0) {
       setSnapshot(EMPTY_SNAPSHOT);
       setActiveArchivePath(null);
-      setSelectedKey(null);
-      setPreview(null);
-      setPreviewLoading(false);
+      clearResourceSelection();
       if (options.persist) {
         await persistOpenedPffPaths([]);
       }
@@ -303,7 +326,14 @@ function App() {
 
       setSnapshot(next);
       setActiveArchivePath((current) => (current && loadedPathSet.has(current) ? current : null));
-      setSelectedKey((current) => (current && loadedEntryKeySet.has(current) ? current : null));
+      setSelectedKeys((current) => {
+        const retained = new Set([...current].filter((key) => loadedEntryKeySet.has(key)));
+        return areSetsEqual(current, retained) ? current : retained;
+      });
+      setFocusedKey((current) => (current && loadedEntryKeySet.has(current) ? current : null));
+      setSelectionAnchorKey((current) =>
+        current && loadedEntryKeySet.has(current) ? current : null,
+      );
       setPreview(null);
       setPreviewLoading(false);
 
@@ -366,9 +396,6 @@ function App() {
     }
 
     setActiveArchivePath(path);
-    setSelectedKey(null);
-    setPreview(null);
-    setPreviewLoading(false);
     setStatus({
       label: "LOADED",
       target: path ? basename(path).toUpperCase() : "ALL PACKAGES",
@@ -386,22 +413,127 @@ function App() {
     }
   }
 
-  function selectResource(nextKey: string) {
-    if (selectedKey !== nextKey) {
-      if (selectedKey === null) {
-        playMenuButton();
-        playWhoosh();
-      } else {
-        playUiPress();
-      }
+  function selectResource(row: ResourceTableRow, mode: ResourceSelectionMode) {
+    const nextKey = entryKey(row);
 
-      setPreview(null);
-      setPreviewLoading(true);
-      setSelectedKey(nextKey);
+    if (mode === "range") {
+      selectResourceRange(nextKey);
+      return;
+    }
+
+    if (mode === "toggle") {
+      toggleResourceSelection(nextKey);
+      return;
+    }
+
+    if (selectedKeys.size === 1 && selectedKeys.has(nextKey)) {
+      clearResourceSelection();
+      return;
+    }
+
+    playResourceSelectionSound();
+    setSelectedKeys(new Set([nextKey]));
+    setSelectionAnchorKey(nextKey);
+    focusResource(nextKey);
+  }
+
+  function toggleResourceSelection(nextKey: string) {
+    const nextSelectedKeys = new Set(selectedKeys);
+    const wasSelected = nextSelectedKeys.has(nextKey);
+
+    if (wasSelected) {
+      nextSelectedKeys.delete(nextKey);
     } else {
-      setSelectedKey(null);
+      nextSelectedKeys.add(nextKey);
+    }
+
+    playResourceSelectionSound();
+    setSelectedKeys(nextSelectedKeys);
+    setSelectionAnchorKey(nextSelectedKeys.size === 0 ? null : nextKey);
+
+    if (!wasSelected) {
+      focusResource(nextKey);
+      return;
+    }
+
+    if (focusedKey === nextKey) {
+      focusResource(firstSelectedVisibleKey(nextSelectedKeys));
+    }
+  }
+
+  function selectResourceRange(targetKey: string) {
+    const anchorKey = visibleAnchorKey(targetKey);
+    const anchorIndex = visibleRows.findIndex((row) => entryKey(row) === anchorKey);
+    const targetIndex = visibleRows.findIndex((row) => entryKey(row) === targetKey);
+    if (anchorIndex < 0 || targetIndex < 0) return;
+
+    playResourceSelectionSound();
+    setSelectedKeys(new Set(resourceRangeKeys(anchorIndex, targetIndex)));
+    setSelectionAnchorKey(anchorKey);
+    focusResource(targetKey);
+  }
+
+  function dragSelectResources(startIndex: number, endIndex: number, committed: boolean) {
+    const anchorRow = visibleRows[startIndex];
+    const focusRow = visibleRows[endIndex];
+    if (!anchorRow || !focusRow) return;
+
+    setSelectedKeys(new Set(resourceRangeKeys(startIndex, endIndex)));
+    setSelectionAnchorKey(entryKey(anchorRow));
+
+    if (committed) {
+      playResourceSelectionSound();
+      focusResource(entryKey(focusRow));
+    }
+  }
+
+  function resourceRangeKeys(startIndex: number, endIndex: number) {
+    const lower = Math.min(startIndex, endIndex);
+    const upper = Math.max(startIndex, endIndex);
+    return visibleRows.slice(lower, upper + 1).map((row) => entryKey(row));
+  }
+
+  function visibleAnchorKey(fallbackKey: string) {
+    if (
+      selectionAnchorKey &&
+      visibleRows.some((row) => entryKey(row) === selectionAnchorKey)
+    ) {
+      return selectionAnchorKey;
+    }
+
+    if (focusedKey && visibleRows.some((row) => entryKey(row) === focusedKey)) {
+      return focusedKey;
+    }
+
+    return fallbackKey;
+  }
+
+  function firstSelectedVisibleKey(keys: ReadonlySet<string>) {
+    const firstSelectedRow = visibleRows.find((row) => keys.has(entryKey(row)));
+    return firstSelectedRow ? entryKey(firstSelectedRow) : null;
+  }
+
+  function focusResource(nextKey: string | null) {
+    if (focusedKey !== nextKey) {
       setPreview(null);
-      setPreviewLoading(false);
+      setPreviewLoading(Boolean(nextKey));
+    }
+
+    setFocusedKey(nextKey);
+  }
+
+  function clearResourceSelection() {
+    setSelectedKeys(new Set());
+    setSelectionAnchorKey(null);
+    focusResource(null);
+  }
+
+  function playResourceSelectionSound() {
+    if (selectedKeys.size === 0) {
+      playMenuButton();
+      playWhoosh();
+    } else {
+      playUiPress();
     }
   }
 
@@ -413,30 +545,33 @@ function App() {
 
       return [...current, format].sort((a, b) => a.localeCompare(b));
     });
-    setSelectedKey(null);
-    setPreview(null);
-    setPreviewLoading(false);
   }
 
   function clearFormats() {
     setSelectedFormats([]);
-    setSelectedKey(null);
-    setPreview(null);
-    setPreviewLoading(false);
   }
 
   async function exportSelected() {
-    if (!selectedEntry) return;
+    if (selectedRows.length === 0) return;
 
+    if (selectedRows.length === 1) {
+      await exportSingleResource(selectedRows[0]);
+      return;
+    }
+
+    await exportSelectedResources(selectedRows);
+  }
+
+  async function exportSingleResource(entry: ResourceTableRow) {
     const outputPath = await save({
       title: "Export RAW resource",
-      defaultPath: selectedEntry.name,
+      defaultPath: entry.name,
     });
     if (!outputPath) return;
 
     setStatus({
       label: "EXPORTING",
-      target: selectedEntry.name,
+      target: entry.name,
       progressLabel: "IDLE",
       progress: null,
     });
@@ -444,8 +579,8 @@ function App() {
     try {
       const result = await invoke<ExportResult>("export_entry", {
         request: {
-          archivePath: selectedEntry.archivePath,
-          entryIndex: selectedEntry.tableIndex,
+          archivePath: entry.archivePath,
+          entryIndex: entry.tableIndex,
           outputPath,
           mode: "raw",
         },
@@ -459,11 +594,96 @@ function App() {
     } catch (error) {
       setStatus({
         label: "ERROR",
-        target: selectedEntry.name,
+        target: entry.name,
         progressLabel: "IDLE",
         progress: null,
       });
       await message(String(error), { title: "Export failed", kind: "error" });
+    }
+  }
+
+  async function exportSelectedResources(entries: ResourceTableRow[]) {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: `Export ${entries.length} RAW resources`,
+    });
+    const outputDirectory = singlePath(selected);
+    if (!outputDirectory) return;
+
+    const archiveCount = new Set(entries.map((entry) => entry.archivePath)).size;
+    const groupByPackage = activeArchivePath === null || archiveCount > 1;
+
+    if (groupByPackage) {
+      const accepted = await confirm(
+        `Selected resources will be exported into package folders under:\n${outputDirectory}`,
+        { title: "Batch export", kind: "info" },
+      );
+      if (!accepted) return;
+    }
+
+    const usedOutputPaths = new Set<string>();
+    const failures: string[] = [];
+    let exportedCount = 0;
+
+    setStatus({
+      label: "EXPORTING",
+      target: `0/${entries.length}`,
+      progressLabel: "EXPORT",
+      progress: 0,
+    });
+
+    for (const [index, entry] of entries.entries()) {
+      try {
+        const outputPath = await buildUniqueBatchExportPath(
+          outputDirectory,
+          entry,
+          groupByPackage,
+          usedOutputPaths,
+        );
+        await invoke<ExportResult>("export_entry", {
+          request: {
+            archivePath: entry.archivePath,
+            entryIndex: entry.tableIndex,
+            outputPath,
+            mode: "raw",
+          },
+        });
+        exportedCount += 1;
+      } catch (error) {
+        failures.push(`${entry.archiveName} / ${entry.name}: ${String(error)}`);
+      }
+
+      setStatus({
+        label: "EXPORTING",
+        target: `${index + 1}/${entries.length}`,
+        progressLabel: "EXPORT",
+        progress: Math.round(((index + 1) / entries.length) * 100),
+      });
+    }
+
+    const hasFailures = failures.length > 0;
+    setStatus({
+      label: hasFailures ? (exportedCount > 0 ? "READY WITH ERRORS" : "ERROR") : "READY",
+      target: `${exportedCount}/${entries.length} EXPORTED`,
+      progressLabel: "IDLE",
+      progress: null,
+    });
+
+    if (hasFailures) {
+      const shownFailures = failures.slice(0, 10).join("\n");
+      const hiddenCount = Math.max(0, failures.length - 10);
+      await message(
+        [
+          `Exported ${exportedCount} of ${entries.length} resources.`,
+          "",
+          shownFailures,
+          hiddenCount > 0 ? `...and ${hiddenCount} more failures.` : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        { title: "Batch export completed with errors", kind: "warning" },
+      );
     }
   }
 
@@ -533,7 +753,7 @@ function App() {
                   searchText={searchText}
                   formatOptions={availableFormats}
                   selectedFormats={selectedFormats}
-                  hasSelection={Boolean(selectedEntry)}
+                  selectionCount={selectedRows.length}
                   onSearch={setSearchText}
                   onToggleFormat={toggleFormat}
                   onClearFormats={clearFormats}
@@ -541,13 +761,15 @@ function App() {
                 />
                 <ResourceTable
                   rows={visibleRows}
-                  selectedKey={selectedKey}
+                  focusedKey={focusedKey}
+                  selectedKeys={selectedKeys}
                   searchText={searchText}
                   sortKey={sortKey}
                   sortAsc={sortAsc}
                   showArchiveColumn={activeArchivePath === null}
                   onSort={changeSort}
-                  onSelect={(entry) => selectResource(entryKey(entry))}
+                  onSelect={selectResource}
+                  onDragSelect={dragSelectResources}
                 />
               </div>
             </div>
@@ -659,6 +881,82 @@ function uniquePaths(paths: string[]) {
   }
 
   return unique;
+}
+
+function areSetsEqual(left: ReadonlySet<string>, right: ReadonlySet<string>) {
+  if (left.size !== right.size) return false;
+
+  for (const value of left) {
+    if (!right.has(value)) return false;
+  }
+
+  return true;
+}
+
+async function buildUniqueBatchExportPath(
+  outputDirectory: string,
+  entry: ResourceTableRow,
+  groupByPackage: boolean,
+  usedOutputPaths: Set<string>,
+) {
+  const baseParts = groupByPackage ? [packageFolderName(entry)] : [];
+  const resourceParts = resourcePathParts(entry.name);
+  let duplicateIndex = 1;
+
+  while (true) {
+    const candidateParts =
+      duplicateIndex === 1 ? resourceParts : withFileSuffix(resourceParts, duplicateIndex);
+    const outputPath = await join(outputDirectory, ...baseParts, ...candidateParts);
+    const outputKey = outputPath.toLowerCase();
+
+    if (!usedOutputPaths.has(outputKey)) {
+      usedOutputPaths.add(outputKey);
+      return outputPath;
+    }
+
+    duplicateIndex += 1;
+  }
+}
+
+function packageFolderName(entry: Pick<ResourceTableRow, "archiveName" | "archivePath">) {
+  const archiveName = basename(entry.archiveName || entry.archivePath);
+  const dotIndex = archiveName.lastIndexOf(".");
+  const stem = dotIndex > 0 ? archiveName.slice(0, dotIndex) : archiveName;
+  return sanitizePathSegment(stem, "package");
+}
+
+function resourcePathParts(name: string) {
+  const parts = name
+    .split(/[\\/]/)
+    .filter((part) => {
+      const trimmed = part.trim();
+      return trimmed.length > 0 && trimmed !== "." && trimmed !== "..";
+    })
+    .map((part) => sanitizePathSegment(part, "resource"))
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts : ["resource.bin"];
+}
+
+function withFileSuffix(parts: string[], duplicateIndex: number) {
+  const nextParts = [...parts];
+  const fileName = nextParts[nextParts.length - 1] ?? "resource.bin";
+  const dotIndex = fileName.lastIndexOf(".");
+  const hasExtension = dotIndex > 0 && dotIndex < fileName.length - 1;
+  const stem = hasExtension ? fileName.slice(0, dotIndex) : fileName;
+  const extension = hasExtension ? fileName.slice(dotIndex) : "";
+
+  nextParts[nextParts.length - 1] = `${stem}_${duplicateIndex}${extension}`;
+  return nextParts;
+}
+
+function sanitizePathSegment(value: string, fallback: string) {
+  const sanitized = value
+    .trim()
+    .replace(/[<>:"|?*\u0000-\u001f]/g, "_")
+    .replace(/^\.+$/, "_");
+
+  return sanitized || fallback;
 }
 
 const appShellClass = css`

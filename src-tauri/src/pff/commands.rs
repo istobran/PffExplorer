@@ -89,6 +89,9 @@ pub fn export_entry(request: ExportRequest) -> Result<ExportResult, String> {
     }
     .map_err(command_error)?;
 
+    if let Some(parent) = Path::new(&request.output_path).parent() {
+        fs::create_dir_all(parent).map_err(|err| command_error(PffError::Io(err)))?;
+    }
     fs::write(&request.output_path, &data).map_err(|err| command_error(PffError::Io(err)))?;
 
     Ok(ExportResult {

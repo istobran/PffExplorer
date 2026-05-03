@@ -9,7 +9,7 @@ export type ResourceToolbarProps = {
   searchText: string;
   formatOptions: string[];
   selectedFormats: string[];
-  hasSelection: boolean;
+  selectionCount: number;
   onSearch: (value: string) => void;
   onToggleFormat: (format: string) => void;
   onClearFormats: () => void;
@@ -31,12 +31,12 @@ export function ResourceToolbar(props: ResourceToolbarProps) {
       <ToolbarSeparator />
       <ToolbarButton
         className="action"
-        disabled={!props.hasSelection}
+        disabled={props.selectionCount === 0}
         onClick={props.onExport}
         title="Export exact bytes stored in the archive"
       >
         <Download size={12} />
-        <span>EXPORT</span>
+        <span>{props.selectionCount > 1 ? `EXPORT (${props.selectionCount})` : "EXPORT"}</span>
       </ToolbarButton>
     </div>
   );

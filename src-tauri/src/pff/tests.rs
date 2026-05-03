@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use flate2::{write::ZlibEncoder, Compression};
 
 use super::archive::{ExtractedData, PffArchive, PffEntry, PFF_FLAG_DELETED};
-use super::commands::snapshot_from_archives;
-use super::models::PreviewStatus;
+use super::commands::{export_entry, snapshot_from_archives};
+use super::models::{ExportMode, ExportRequest, PreviewStatus};
 use super::preview::audio::{is_previewable_audio, write_pcm_wav};
 use super::preview::image::{image_preview_from_bytes, is_previewable_image};
 use super::preview::preview_from_bytes;
@@ -40,6 +40,28 @@ fn filters_deleted_entries_from_snapshot() {
     assert_eq!(snapshot.stats.deleted_count, 1);
 
     let _ = fs::remove_file(path);
+}
+
+#[test]
+fn export_entry_creates_parent_dirs() {
+    let archive_path = temp_path("export-source.pff");
+    let output_dir = temp_path("export-output");
+    let output_path = output_dir.join("resource").join("hello.txt");
+    write_fixture(&archive_path, vec![fixture_entry(0, "hello.txt", b"hello")]);
+
+    let result = export_entry(ExportRequest {
+        archive_path: archive_path.to_string_lossy().into_owned(),
+        entry_index: 0,
+        output_path: output_path.to_string_lossy().into_owned(),
+        mode: ExportMode::Raw,
+    })
+    .expect("entry exports");
+
+    assert_eq!(result.byte_len, 5);
+    assert_eq!(fs::read(&output_path).unwrap(), b"hello");
+
+    let _ = fs::remove_file(archive_path);
+    let _ = fs::remove_dir_all(output_dir);
 }
 
 #[test]
