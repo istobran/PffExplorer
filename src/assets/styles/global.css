@@ -1,8 +1,9 @@
 @font-face {
-  font-family: "Share Tech Mono";
-  src: url("../fonts/share-tech-mono.ttf") format("truetype");
+  font-family: "Science Gothic";
+  src: url("../fonts/science-gothic.ttf") format("truetype");
   font-style: normal;
   font-weight: 400;
+  font-stretch: normal;
   font-display: swap;
 }
 
@@ -32,8 +33,8 @@
   --hover-row: #091809;
   --title: #c3fdc3;
   --text-dim: #31aa31;
-  --font-mono: "Share Tech Mono", "Courier New", monospace;
-  --font-vt: "VT323", "Share Tech Mono", monospace;
+  --font-mono: "Science Gothic", "Courier New", monospace;
+  --font-vt: "VT323", "Science Gothic", monospace;
   --cursor-crosshair: url("../images/df1-cursor.png") 11 11;
 }
 

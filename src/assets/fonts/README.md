@@ -1,4 +1,4 @@
 Fonts downloaded from Google Fonts.
 
-- Share Tech Mono: https://fonts.google.com/specimen/Share+Tech+Mono
+- Science Gothic: https://fonts.google.com/specimen/Science+Gothic
 - VT323: https://fonts.google.com/specimen/VT323
