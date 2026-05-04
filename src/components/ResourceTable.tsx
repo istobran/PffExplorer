@@ -111,7 +111,6 @@ export function ResourceTable(props: ResourceTableProps) {
       lastClientY: event.clientY,
       active: false,
     };
-    parentRef.current?.setPointerCapture(event.pointerId);
   }
 
   function handleBodyPointerMove(event: PointerEvent<HTMLDivElement>) {
@@ -129,6 +128,7 @@ export function ResourceTable(props: ResourceTableProps) {
 
     drag.active = true;
     suppressNextClickRef.current = true;
+    capturePointer(event.pointerId);
     updateDragSelection(drag.anchorIndex, currentIndex, false);
     startAutoScroll();
     event.preventDefault();
@@ -238,6 +238,17 @@ export function ResourceTable(props: ResourceTableProps) {
 
     window.cancelAnimationFrame(autoScrollFrameRef.current);
     autoScrollFrameRef.current = null;
+  }
+
+  function capturePointer(pointerId: number) {
+    const element = parentRef.current;
+    if (!element || element.hasPointerCapture(pointerId)) return;
+
+    try {
+      element.setPointerCapture(pointerId);
+    } catch {
+      // WebView implementations can reject late capture; drag still works inside the table.
+    }
   }
 
   const selectionBox =
