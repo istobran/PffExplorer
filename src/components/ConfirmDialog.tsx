@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { useEffect, useRef, type CSSProperties } from "react";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { PanelCorners } from "@/components/panel/PanelCorners";
+import { useI18n } from "@/lib/i18n";
 import { playDialogOpen, playTypewriterClick, playTypewriterReturn } from "@/lib/sounds";
 
 export type ConfirmDialogProps = {
@@ -18,6 +19,7 @@ export type ConfirmDialogProps = {
 };
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
+  const { t } = useI18n();
   const playedOpenSoundRef = useRef(false);
   const messageCharacters = Array.from(props.message);
   const detailCharacters = Array.from(props.detail ?? "");
@@ -94,7 +96,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
           <div className="dialog-title" id="confirm-dialog-title">
             {props.title}
           </div>
-          <div className="dialog-sub">CONFIRM</div>
+          <div className="dialog-sub">{t("dialog.confirm")}</div>
         </header>
         <div className="dialog-body">
           <AlertTriangle size={22} className="dialog-icon" />
@@ -142,14 +144,14 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         </div>
         <footer className="dialog-actions">
           <ToolbarButton disabled={props.closing} onClick={props.onCancel}>
-            {props.cancelLabel ?? "CANCEL"}
+            {props.cancelLabel ?? t("dialog.cancel")}
           </ToolbarButton>
           <ToolbarButton
             className="primary"
             disabled={props.closing}
             onClick={props.onConfirm}
           >
-            {props.confirmLabel ?? "OK"}
+            {props.confirmLabel ?? t("dialog.ok")}
           </ToolbarButton>
         </footer>
       </section>

@@ -39,6 +39,7 @@ export type WorkspaceSnapshot = {
 
 export type AppConfig = {
   openedPffPaths: string[];
+  locale?: "zh-CN" | "en-US";
 };
 
 export type PreviewResponse = {

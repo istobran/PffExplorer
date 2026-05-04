@@ -10,6 +10,7 @@ const CONFIG_FILE_NAME: &str = "config.json";
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub opened_pff_paths: Vec<String>,
+    pub locale: Option<String>,
 }
 
 #[tauri::command]

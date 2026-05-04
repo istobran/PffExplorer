@@ -2,6 +2,7 @@ import { css } from "@emotion/css";
 import clsx from "clsx";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { playMissionSwitch, playUiHover, playUiPress } from "@/lib/sounds";
 
 export type FormatFilterDropdownProps = {
@@ -12,6 +13,7 @@ export type FormatFilterDropdownProps = {
 };
 
 export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
+  const { t } = useI18n();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const active = open || props.selected.length > 0;
@@ -39,9 +41,9 @@ export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
   }, [open]);
 
   function formatLabel() {
-    if (props.selected.length === 0) return "ALL";
+    if (props.selected.length === 0) return t("format.all");
     if (props.selected.length === 1) return props.selected[0];
-    return `${props.selected.length} TYPES`;
+    return t("format.count", { count: props.selected.length });
   }
 
   return (
@@ -54,7 +56,7 @@ export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
         onClick={() => setOpen((value) => !value)}
         disabled={props.options.length === 0}
       >
-        <span>TYPE:</span>
+        <span>{t("format.type")}</span>
         <span className="format-filter-label">{formatLabel()}</span>
         <ChevronDown size={12} />
       </button>
@@ -93,7 +95,7 @@ export function FormatFilterDropdown(props: FormatFilterDropdownProps) {
             }}
           >
             <span className="format-check">◈</span>
-            <span>ALL TYPES</span>
+            <span>{t("format.allTypes")}</span>
           </button>
         </div>
       )}

@@ -13,12 +13,14 @@ export type PackageTreeItemProps = {
   active: boolean;
   all?: boolean;
   title?: string;
+  closeLabel?: string;
   onClick: () => void;
   onClose?: () => void;
 };
 
 export function PackageTreeItem(props: PackageTreeItemProps) {
   const Icon = props.icon;
+  const closeLabel = props.closeLabel ?? `Close ${props.label}`;
 
   function handleClose(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
@@ -47,8 +49,8 @@ export function PackageTreeItem(props: PackageTreeItemProps) {
         <button
           type="button"
           className="pff-close"
-          title={`Close ${props.label}`}
-          aria-label={`Close ${props.label}`}
+          title={closeLabel}
+          aria-label={closeLabel}
           onPointerEnter={playUiHover}
           onPointerDown={playUiPress}
           onClick={handleClose}

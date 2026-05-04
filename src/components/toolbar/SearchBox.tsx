@@ -1,6 +1,7 @@
 import { css } from "@emotion/css";
 import { Search } from "lucide-react";
 import type { FormEvent } from "react";
+import { useI18n } from "@/lib/i18n";
 import { playTypewriterInput, playUiHover, playUiPress } from "@/lib/sounds";
 
 export type SearchBoxProps = {
@@ -9,6 +10,8 @@ export type SearchBoxProps = {
 };
 
 export function SearchBox(props: SearchBoxProps) {
+  const { t } = useI18n();
+
   function handleInput(event: FormEvent<HTMLInputElement>) {
     const nativeEvent = event.nativeEvent as InputEvent;
     if (!nativeEvent.inputType?.startsWith("insert")) return;
@@ -28,7 +31,7 @@ export function SearchBox(props: SearchBoxProps) {
       <Search className="search-icon" size={12} />
       <input
         type="text"
-        placeholder="SEARCH FILES..."
+        placeholder={t("resource.search")}
         value={props.value}
         onPointerEnter={playUiHover}
         onPointerDown={playUiPress}

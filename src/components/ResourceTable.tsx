@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ResourceTableHeader } from "@/components/resource-table/ResourceTableHeader";
 import { RESOURCE_TABLE_ROW_HEIGHT } from "@/components/resource-table/resourceTableLayout";
 import { ResourceTableRowItem } from "@/components/resource-table/ResourceTableRowItem";
+import { useI18n } from "@/lib/i18n";
 
 export type ResourceSelectionMode = "single" | "toggle" | "range";
 
@@ -48,6 +49,7 @@ const DRAG_THRESHOLD_PX = 4;
 const AUTO_SCROLL_EDGE_PX = 36;
 
 export function ResourceTable(props: ResourceTableProps) {
+  const { t } = useI18n();
   const parentRef = useRef<HTMLDivElement>(null);
   const pointerDragRef = useRef<PointerDragState | null>(null);
   const suppressNextClickRef = useRef(false);
@@ -254,7 +256,7 @@ export function ResourceTable(props: ResourceTableProps) {
       className={resourceTableClass}
       tabIndex={0}
       role="grid"
-      aria-label="Resource files"
+      aria-label={t("resource.aria")}
       onKeyDown={handleKeyDown}
     >
       <ResourceTableHeader
@@ -265,7 +267,7 @@ export function ResourceTable(props: ResourceTableProps) {
       />
 
       {props.rows.length === 0 ? (
-        <EmptyState marker="0">NO MATCHING FILES</EmptyState>
+        <EmptyState marker="0">{t("resource.empty")}</EmptyState>
       ) : (
         <div
           id="tbl-body"

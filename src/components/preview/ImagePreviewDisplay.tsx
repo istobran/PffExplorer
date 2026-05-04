@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import clsx from "clsx";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ImagePreview } from "@/types";
+import { useI18n } from "@/lib/i18n";
 
 const RADAR_STEPS = 8;
 const RADAR_LOOP_STEP_DELAY_MS = 72;
@@ -30,6 +31,7 @@ export function ImagePreviewLoadingBox() {
 }
 
 export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
+  const { t } = useI18n();
   const imageSrc = useMemo(() => {
     if (props.image.filePath) return convertFileSrc(props.image.filePath);
     return props.image.dataUrl;
@@ -119,7 +121,7 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
             alt={props.name}
           />
         )}
-        {loadFailed && <div className="image-load-error">IMAGE LOAD FAILED</div>}
+        {loadFailed && <div className="image-load-error">{t("preview.imageFailed")}</div>}
       </div>
     </div>
   );

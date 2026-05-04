@@ -2,18 +2,22 @@ import { css } from "@emotion/css";
 import type { MouseEvent } from "react";
 import { FileArchive, FolderOpen, Minus, X } from "lucide-react";
 import { BackgroundMusicToggleButton } from "@/components/titlebar/BackgroundMusicToggleButton";
+import { LanguageToggleButton } from "@/components/titlebar/LanguageToggleButton";
 import { NavButton } from "@/components/titlebar/NavButton";
 import { SoundToggleButton } from "@/components/titlebar/SoundToggleButton";
 import { TitleLogo } from "@/components/titlebar/TitleLogo";
 import { WindowControlButton } from "@/components/titlebar/WindowControlButton";
+import { useI18n, type Locale } from "@/lib/i18n";
 
 export type TitleBarProps = {
   soundMuted: boolean;
   backgroundMusicEnabled: boolean;
+  locale: Locale;
   onOpenProject: () => void;
   onOpenFile: () => void;
   onToggleSoundMuted: () => void;
   onToggleBackgroundMusic: () => void;
+  onToggleLocale: () => void;
   onMinimize: () => void;
   onClose: () => void;
   onStartDrag: (event: MouseEvent<HTMLElement>) => void;
@@ -21,13 +25,23 @@ export type TitleBarProps = {
 };
 
 export function TitleBar(props: TitleBarProps) {
+  const { t } = useI18n();
+
   return (
     <nav className={titleBarClass}>
-      <NavButton icon={FolderOpen} title="Open game directory" onClick={props.onOpenProject}>
-        OPEN PROJECT
+      <NavButton
+        icon={FolderOpen}
+        title={t("title.openProject.title")}
+        onClick={props.onOpenProject}
+      >
+        {t("title.openProject")}
       </NavButton>
-      <NavButton icon={FileArchive} title="Open single PFF file" onClick={props.onOpenFile}>
-        OPEN FILE
+      <NavButton
+        icon={FileArchive}
+        title={t("title.openFile.title")}
+        onClick={props.onOpenFile}
+      >
+        {t("title.openFile")}
       </NavButton>
       <div
         className="nav-center"
@@ -35,7 +49,7 @@ export function TitleBar(props: TitleBarProps) {
         onDoubleClick={props.onTitleDoubleClick}
       >
         <div className="nav-title">
-          PFF RESOURCE EXPLORER
+          {t("app.title")}
         </div>
       </div>
       <TitleLogo
@@ -46,10 +60,20 @@ export function TitleBar(props: TitleBarProps) {
         enabled={props.backgroundMusicEnabled}
         onToggle={props.onToggleBackgroundMusic}
       />
+      <LanguageToggleButton locale={props.locale} onToggle={props.onToggleLocale} />
       <SoundToggleButton muted={props.soundMuted} onToggle={props.onToggleSoundMuted} />
       <div className="win-controls">
-        <WindowControlButton icon={Minus} title="Minimize" onClick={props.onMinimize} />
-        <WindowControlButton icon={X} title="Close" variant="close" onClick={props.onClose} />
+        <WindowControlButton
+          icon={Minus}
+          title={t("title.minimize")}
+          onClick={props.onMinimize}
+        />
+        <WindowControlButton
+          icon={X}
+          title={t("title.close")}
+          variant="close"
+          onClick={props.onClose}
+        />
       </div>
     </nav>
   );

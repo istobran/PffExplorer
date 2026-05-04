@@ -4,6 +4,7 @@ import { FormatFilterDropdown } from "@/components/toolbar/FormatFilterDropdown"
 import { SearchBox } from "@/components/toolbar/SearchBox";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { ToolbarSeparator } from "@/components/toolbar/ToolbarSeparator";
+import { useI18n } from "@/lib/i18n";
 
 export type ResourceToolbarProps = {
   searchText: string;
@@ -18,9 +19,11 @@ export type ResourceToolbarProps = {
 };
 
 export function ResourceToolbar(props: ResourceToolbarProps) {
+  const { t } = useI18n();
+
   return (
     <div className={toolbarClass}>
-      <span className="toolbar-label">FILTER:</span>
+      <span className="toolbar-label">{t("resource.filter")}</span>
       <SearchBox value={props.searchText} onChange={props.onSearch} />
       <ToolbarSeparator />
       <FormatFilterDropdown
@@ -34,7 +37,7 @@ export function ResourceToolbar(props: ResourceToolbarProps) {
         className="action"
         disabled={props.selectionCount === 0 || props.exporting}
         onClick={props.onExport}
-        title="Export exact bytes stored in the archive"
+        title={t("resource.export.title")}
       >
         {props.exporting ? (
           <LoaderCircle className="toolbar-spin" size={12} />
@@ -43,10 +46,10 @@ export function ResourceToolbar(props: ResourceToolbarProps) {
         )}
         <span>
           {props.exporting
-            ? "EXPORTING"
+            ? t("resource.exporting")
             : props.selectionCount > 1
-              ? `EXPORT (${props.selectionCount})`
-              : "EXPORT"}
+              ? t("resource.exportWithCount", { count: props.selectionCount })
+              : t("resource.export")}
         </span>
       </ToolbarButton>
     </div>

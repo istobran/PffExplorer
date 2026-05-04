@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
+import { useI18n } from "@/lib/i18n";
 import { playUiHover, playUiPress } from "@/lib/sounds";
 
 const AUDIO_BAR_COUNT = 18;
@@ -26,17 +27,20 @@ export type AudioPreviewDisplayProps = {
 };
 
 export function AudioPreviewLoadingBox() {
+  const { t } = useI18n();
+
   return (
     <div className={audioPreviewDisplayClass}>
       <div className="audio-shell loading">
         <AudioLines size={28} />
-        <div className="audio-status">PREPARING AUDIO</div>
+        <div className="audio-status">{t("preview.audioPreparing")}</div>
       </div>
     </div>
   );
 }
 
 export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
+  const { t } = useI18n();
   const audioMeterRef = useRef<AudioMeterGraph | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const previewAudioContextRef = useRef<AudioContext | null>(null);
@@ -396,7 +400,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
         <div className="transport">
           <button
             type="button"
-            title={paused ? "Play audio" : "Pause audio"}
+            title={paused ? t("preview.audioPlay") : t("preview.audioPause")}
             onPointerEnter={playUiHover}
             onPointerDown={playUiPress}
             onClick={togglePlayback}
@@ -405,7 +409,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
           </button>
           <button
             type="button"
-            title="Restart audio"
+            title={t("preview.audioRestart")}
             onPointerEnter={playUiHover}
             onPointerDown={playUiPress}
             onClick={restartPlayback}
@@ -434,12 +438,12 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
             step={0.01}
             value={volume}
             onChange={(event) => changeVolume(event.currentTarget.value)}
-            aria-label="Audio preview volume"
+            aria-label={t("preview.audioVolume")}
           />
           <span className="volume-value">{volumePercent}%</span>
         </div>
 
-        {loadFailed && <div className="audio-message error">AUDIO DECODE FAILED</div>}
+        {loadFailed && <div className="audio-message error">{t("preview.audioFailed")}</div>}
       </div>
     </div>
   );

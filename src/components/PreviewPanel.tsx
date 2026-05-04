@@ -15,6 +15,7 @@ import { PreviewBody } from "@/components/preview/PreviewBody";
 import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
 import { PreviewTextBlock, PreviewTextLoading } from "@/components/preview/PreviewTextBlock";
+import { useI18n } from "@/lib/i18n";
 import {
   playMissionBriefingSelect,
   playUiHover,
@@ -29,6 +30,7 @@ export type PreviewPanelProps = {
 };
 
 export function PreviewPanel(props: PreviewPanelProps) {
+  const { t } = useI18n();
   const [nightVision, setNightVision] = useState(true);
   const imagePreviewActive =
     !props.loading && props.preview?.status === "image" && props.preview.image != null;
@@ -68,7 +70,7 @@ export function PreviewPanel(props: PreviewPanelProps) {
   }, [audioPreviewActive]);
 
   if (!props.entry) {
-    return <PreviewEmptyState icon={FileArchive} message="SELECT A RESOURCE TO PREVIEW" />;
+    return <PreviewEmptyState icon={FileArchive} message={t("preview.select")} />;
   }
 
   if (props.loading) {
@@ -91,16 +93,16 @@ export function PreviewPanel(props: PreviewPanelProps) {
     if (isPreviewableTextName(props.entry.name)) {
       return (
         <PreviewBody>
-          <PreviewTextLoading message="LOADING TEXT PREVIEW..." />
+          <PreviewTextLoading message={t("preview.loading.text")} />
         </PreviewBody>
       );
     }
 
-    return <PreviewEmptyState loading message="DECODING PREVIEW" />;
+    return <PreviewEmptyState loading message={t("preview.decoding")} />;
   }
 
   if (!props.preview) {
-    return <PreviewEmptyState marker="!" message="NO PREVIEW DATA" />;
+    return <PreviewEmptyState marker="!" message={t("preview.noData")} />;
   }
 
   if (props.preview.status === "text" && props.preview.text != null) {
@@ -152,7 +154,7 @@ export function PreviewPanel(props: PreviewPanelProps) {
     <PreviewBody>
       <PreviewMeta entry={props.entry} preview={props.preview} />
       <BinaryPreview
-        title={props.preview.message ?? "BINARY FILE"}
+        title={props.preview.message ?? t("preview.binary")}
         hexHead={props.preview.hexHead}
       />
     </PreviewBody>
@@ -223,13 +225,15 @@ type ImagePreviewModeToggleProps = {
 };
 
 function ImagePreviewModeToggle(props: ImagePreviewModeToggleProps) {
+  const { t } = useI18n();
+
   return (
-    <div className={imagePreviewModeToggleClass} role="group" aria-label="Image preview mode">
+    <div className={imagePreviewModeToggleClass} role="group" aria-label={t("preview.imageMode")}>
       <button
         type="button"
         className={props.value ? "active" : undefined}
         aria-pressed={props.value}
-        title="Night vision preview"
+        title={t("preview.nightVision")}
         onClick={() => props.onChange(true)}
         onPointerEnter={playUiHover}
         onPointerDown={playMissionBriefingSelect}
@@ -240,7 +244,7 @@ function ImagePreviewModeToggle(props: ImagePreviewModeToggleProps) {
         type="button"
         className={!props.value ? "active" : undefined}
         aria-pressed={!props.value}
-        title="Original color preview"
+        title={t("preview.originalColor")}
         onClick={() => props.onChange(false)}
         onPointerEnter={playUiHover}
         onPointerDown={playMissionBriefingSelect}

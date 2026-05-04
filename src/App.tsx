@@ -30,6 +30,15 @@ import {
   fileExtensionLabel,
 } from "@/lib/format";
 import {
+  DEFAULT_LOCALE,
+  I18nProvider,
+  isLocale,
+  translate,
+  type Locale,
+  type TranslationKey,
+  type TranslationParams,
+} from "@/lib/i18n";
+import {
   DF1_MENU_SLIDE_DURATION_MS,
   isBackgroundMusicEnabled,
   isSoundMuted,
@@ -99,6 +108,7 @@ function App() {
   const [confirmDialogState, setConfirmDialogState] =
     useState<ConfirmDialogState | null>(null);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
   const [backgroundMusicEnabled, setBackgroundMusicEnabledState] = useState(() =>
     isBackgroundMusicEnabled(),
@@ -109,6 +119,8 @@ function App() {
     progressLabel: "IDLE",
     progress: null,
   });
+  const t = (key: TranslationKey, params?: TranslationParams) =>
+    translate(locale, key, params);
 
   useEffect(() => {
     void fitWindowToWorkArea();
@@ -119,6 +131,10 @@ function App() {
     preloadDf1MenuSounds();
     startDf1MenuMusic();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const selectedEntry = useMemo(() => {
     if (!focusedKey) return null;
@@ -268,7 +284,7 @@ function App() {
     const selected = await open({
       directory: true,
       multiple: false,
-      title: "Open game/resource directory",
+      title: t("system.openProject.title"),
     });
     const path = singlePath(selected);
     if (!path) return;
@@ -276,8 +292,8 @@ function App() {
     try {
       const projectPaths = await invoke<string[]>("scan_pff_project", { path });
       if (projectPaths.length === 0) {
-        await message("No PFF files were found in this project directory.", {
-          title: "Open project",
+        await message(t("system.openProject.empty"), {
+          title: t("system.openProject.messageTitle"),
           kind: "info",
         });
         return;
@@ -295,7 +311,7 @@ function App() {
         progressLabel: "IDLE",
         progress: null,
       });
-      await message(String(error), { title: "Project scan failed", kind: "error" });
+      await message(String(error), { title: t("system.openProject.failed"), kind: "error" });
     }
   }
 
@@ -303,8 +319,8 @@ function App() {
     const selected = await open({
       directory: false,
       multiple: false,
-      title: "Open PFF file",
-      filters: [{ name: "PFF archives", extensions: ["pff"] }],
+      title: t("system.openFile.title"),
+      filters: [{ name: t("system.openFile.filter"), extensions: ["pff"] }],
     });
     const path = singlePath(selected);
     if (!path) return;
@@ -319,6 +335,8 @@ function App() {
   async function restoreSavedWorkspace() {
     try {
       const config = await invoke<AppConfig>("load_app_config");
+      setLocale(isLocale(config.locale) ? config.locale : DEFAULT_LOCALE);
+
       const paths = uniquePaths(config.openedPffPaths ?? []);
       if (paths.length === 0) return;
 
@@ -329,7 +347,7 @@ function App() {
       });
     } catch (error) {
       console.error("Config restore failed", error);
-      await message(String(error), { title: "Config restore failed", kind: "warning" });
+      await message(String(error), { title: t("system.configRestoreFailed"), kind: "warning" });
     }
   }
 
@@ -406,22 +424,23 @@ function App() {
         progressLabel: "IDLE",
         progress: null,
       });
-      await message(String(error), { title: "PFF load failed", kind: "error" });
+      await message(String(error), { title: t("system.pffLoadFailed"), kind: "error" });
     } finally {
       window.clearInterval(progressTimer);
     }
   }
 
-  async function persistOpenedPffPaths(paths: string[]) {
+  async function persistOpenedPffPaths(paths: string[], nextLocale = locale) {
     const config: AppConfig = {
       openedPffPaths: uniquePaths(paths),
+      locale: nextLocale,
     };
 
     try {
       await invoke("save_app_config", { config });
     } catch (error) {
       console.error("Config save failed", error);
-      await message(String(error), { title: "Config save failed", kind: "warning" });
+      await message(String(error), { title: t("system.configSaveFailed"), kind: "warning" });
     }
   }
 
@@ -642,7 +661,7 @@ function App() {
 
   async function exportSingleResource(entry: ResourceTableRow) {
     const outputPath = await save({
-      title: "Export RAW resource",
+      title: t("system.exportSingle.title"),
       defaultPath: entry.name,
     });
     if (!outputPath) return;
@@ -677,7 +696,7 @@ function App() {
         progressLabel: "IDLE",
         progress: null,
       });
-      await message(String(error), { title: "Export failed", kind: "error" });
+      await message(String(error), { title: t("system.exportFailed"), kind: "error" });
     } finally {
       setExporting(false);
     }
@@ -687,7 +706,7 @@ function App() {
     const selected = await open({
       directory: true,
       multiple: false,
-      title: `Export ${entries.length} RAW resources`,
+      title: t("system.exportBatch.title", { count: entries.length }),
     });
     const outputDirectory = singlePath(selected);
     if (!outputDirectory) return;
@@ -697,11 +716,11 @@ function App() {
 
     if (groupByPackage) {
       const accepted = await showConfirmDialog({
-        title: "BATCH EXPORT",
-        message: "Selected resources will be exported into package folders under:",
+        title: t("dialog.batchExport.title"),
+        message: t("dialog.batchExport.message"),
         detail: outputDirectory,
-        confirmLabel: "EXPORT",
-        cancelLabel: "CANCEL",
+        confirmLabel: t("dialog.batchExport.confirm"),
+        cancelLabel: t("dialog.cancel"),
       });
       if (!accepted) return;
     }
@@ -755,7 +774,7 @@ function App() {
             ? "READY WITH ERRORS"
             : "ERROR"
           : "READY",
-        target: `${exportedCount}/${entries.length} EXPORTED`,
+        target: t("app.exportedCount", { exported: exportedCount, total: entries.length }),
         progressLabel: "IDLE",
         progress: null,
       });
@@ -765,14 +784,17 @@ function App() {
         const hiddenCount = Math.max(0, failures.length - 10);
         await message(
           [
-            `Exported ${exportedCount} of ${entries.length} resources.`,
+            t("system.exportErrors.summary", {
+              exported: exportedCount,
+              total: entries.length,
+            }),
             "",
             shownFailures,
-            hiddenCount > 0 ? `...and ${hiddenCount} more failures.` : "",
+            hiddenCount > 0 ? t("system.exportErrors.more", { count: hiddenCount }) : "",
           ]
             .filter(Boolean)
             .join("\n"),
-          { title: "Batch export completed with errors", kind: "warning" },
+          { title: t("system.exportErrors.title"), kind: "warning" },
         );
       }
     } finally {
@@ -800,6 +822,12 @@ function App() {
     setBackgroundMusicEnabledState(nextEnabled);
   }
 
+  function toggleLocale() {
+    const nextLocale = locale === "zh-CN" ? "en-US" : "zh-CN";
+    setLocale(nextLocale);
+    void persistOpenedPffPaths(openedArchivePaths(), nextLocale);
+  }
+
   function showConfirmDialog(options: Omit<ConfirmDialogState, "closing" | "resolve">) {
     return new Promise<boolean>((resolve) => {
       setConfirmDialogState({ ...options, closing: false, resolve });
@@ -818,90 +846,102 @@ function App() {
   }
 
   return (
-    <main className={appShellClass}>
-      <TitleBar
-        soundMuted={soundMuted}
-        backgroundMusicEnabled={backgroundMusicEnabled}
-        onOpenProject={openProject}
-        onOpenFile={openFile}
-        onToggleSoundMuted={toggleSoundMuted}
-        onToggleBackgroundMusic={toggleBackgroundMusic}
-        onMinimize={minimizeWindow}
-        onClose={closeWindow}
-        onStartDrag={startWindowDrag}
-        onTitleDoubleClick={fitWindowToCursorWorkAreaFromTitle}
-      />
+    <I18nProvider locale={locale}>
+      <main className={appShellClass}>
+        <TitleBar
+          soundMuted={soundMuted}
+          backgroundMusicEnabled={backgroundMusicEnabled}
+          locale={locale}
+          onOpenProject={openProject}
+          onOpenFile={openFile}
+          onToggleSoundMuted={toggleSoundMuted}
+          onToggleBackgroundMusic={toggleBackgroundMusic}
+          onToggleLocale={toggleLocale}
+          onMinimize={minimizeWindow}
+          onClose={closeWindow}
+          onStartDrag={startWindowDrag}
+          onTitleDoubleClick={fitWindowToCursorWorkAreaFromTitle}
+        />
 
-      <div className={contentClass}>
-        <Panel id="tree-panel" title="PACKAGES" sub={`${snapshot.archives.length} PFF`}>
-          <PackageTree
-            archives={snapshot.archives}
-            allCount={snapshot.entries.length}
-            activeArchivePath={activeArchivePath}
-            onSelect={selectArchive}
-            onCloseArchive={closeArchive}
-            onCloseAllArchives={closeAllArchives}
-          />
-        </Panel>
-
-        <div className={rightColumnClass}>
-          <Panel id="table-panel" title="RESOURCE FILES" sub={`${visibleRows.length} FILES`}>
-            <div key={resourceFilesSlideKey} className={df1HorizontalWipeClass}>
-              <div className="df1-wipe-content">
-                <ResourceToolbar
-                  searchText={searchText}
-                  formatOptions={availableFormats}
-                  selectedFormats={selectedFormats}
-                  selectionCount={selectedRows.length}
-                  exporting={exporting}
-                  onSearch={setSearchText}
-                  onToggleFormat={toggleFormat}
-                  onClearFormats={clearFormats}
-                  onExport={exportSelected}
-                />
-                <ResourceTable
-                  rows={visibleRows}
-                  focusedKey={focusedKey}
-                  selectedKeys={selectedKeys}
-                  searchText={searchText}
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  showArchiveColumn={activeArchivePath === null}
-                  onSort={changeSort}
-                  onSelect={selectResource}
-                  onDragSelect={dragSelectResources}
-                />
-              </div>
-            </div>
+        <div className={contentClass}>
+          <Panel
+            id="tree-panel"
+            title={t("panel.packages")}
+            sub={t("app.packageCount", { count: snapshot.archives.length })}
+          >
+            <PackageTree
+              archives={snapshot.archives}
+              allCount={snapshot.entries.length}
+              activeArchivePath={activeArchivePath}
+              onSelect={selectArchive}
+              onCloseArchive={closeArchive}
+              onCloseAllArchives={closeAllArchives}
+            />
           </Panel>
 
-          {selectedEntry && (
-            <Panel id="preview-panel" title="FILE PREVIEW" sub={selectedEntry.name}>
-              <PreviewPanel entry={selectedEntry} preview={preview} loading={previewLoading} />
+          <div className={rightColumnClass}>
+            <Panel
+              id="table-panel"
+              title={t("panel.resources")}
+              sub={t("app.fileCount", { count: visibleRows.length })}
+            >
+              <div key={resourceFilesSlideKey} className={df1HorizontalWipeClass}>
+                <div className="df1-wipe-content">
+                  <ResourceToolbar
+                    searchText={searchText}
+                    formatOptions={availableFormats}
+                    selectedFormats={selectedFormats}
+                    selectionCount={selectedRows.length}
+                    exporting={exporting}
+                    onSearch={setSearchText}
+                    onToggleFormat={toggleFormat}
+                    onClearFormats={clearFormats}
+                    onExport={exportSelected}
+                  />
+                  <ResourceTable
+                    rows={visibleRows}
+                    focusedKey={focusedKey}
+                    selectedKeys={selectedKeys}
+                    searchText={searchText}
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    showArchiveColumn={activeArchivePath === null}
+                    onSort={changeSort}
+                    onSelect={selectResource}
+                    onDragSelect={dragSelectResources}
+                  />
+                </div>
+              </div>
             </Panel>
-          )}
+
+            {selectedEntry && (
+              <Panel id="preview-panel" title={t("panel.preview")} sub={selectedEntry.name}>
+                <PreviewPanel entry={selectedEntry} preview={preview} loading={previewLoading} />
+              </Panel>
+            )}
+          </div>
         </div>
-      </div>
 
-      <StatusBar
-        status={status}
-        snapshot={snapshot}
-        activeArchivePath={activeArchivePath}
-      />
-
-      {confirmDialogState && (
-        <ConfirmDialog
-          title={confirmDialogState.title}
-          message={confirmDialogState.message}
-          detail={confirmDialogState.detail}
-          confirmLabel={confirmDialogState.confirmLabel}
-          cancelLabel={confirmDialogState.cancelLabel}
-          closing={confirmDialogState.closing}
-          onConfirm={() => closeConfirmDialog(true)}
-          onCancel={() => closeConfirmDialog(false)}
+        <StatusBar
+          status={status}
+          snapshot={snapshot}
+          activeArchivePath={activeArchivePath}
         />
-      )}
-    </main>
+
+        {confirmDialogState && (
+          <ConfirmDialog
+            title={confirmDialogState.title}
+            message={confirmDialogState.message}
+            detail={confirmDialogState.detail}
+            confirmLabel={confirmDialogState.confirmLabel}
+            cancelLabel={confirmDialogState.cancelLabel}
+            closing={confirmDialogState.closing}
+            onConfirm={() => closeConfirmDialog(true)}
+            onCancel={() => closeConfirmDialog(false)}
+          />
+        )}
+      </main>
+    </I18nProvider>
   );
 }
 

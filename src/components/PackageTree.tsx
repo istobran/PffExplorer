@@ -4,6 +4,7 @@ import { Archive, Box, FileArchive } from "lucide-react";
 import type { ArchiveSummary } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
 import { PackageTreeItem } from "@/components/package-tree/PackageTreeItem";
+import { useI18n } from "@/lib/i18n";
 
 export type PackageTreeProps = {
   archives: ArchiveSummary[];
@@ -15,6 +16,8 @@ export type PackageTreeProps = {
 };
 
 export function PackageTree(props: PackageTreeProps) {
+  const { t } = useI18n();
+
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
 
@@ -42,17 +45,18 @@ export function PackageTree(props: PackageTreeProps) {
       className={packageTreeClass}
       tabIndex={0}
       role="listbox"
-      aria-label="Packages"
+      aria-label={t("package.aria")}
       onKeyDown={handleKeyDown}
     >
       <PackageTreeItem
         icon={Archive}
-        label="ALL PACKAGES"
+        label={t("package.all")}
         count={props.allCount}
         active={props.activeArchivePath === null}
         all
         onClick={() => props.onSelect(null)}
         onClose={props.archives.length > 0 ? props.onCloseAllArchives : undefined}
+        closeLabel={t("package.close", { name: t("package.all") })}
       />
       {props.archives.map((archive) => (
         <PackageTreeItem
@@ -64,11 +68,12 @@ export function PackageTree(props: PackageTreeProps) {
           title={archive.path}
           onClick={() => props.onSelect(archive.path)}
           onClose={() => props.onCloseArchive(archive.path)}
+          closeLabel={t("package.close", { name: archive.name.toUpperCase() })}
         />
       ))}
       {props.archives.length === 0 && (
         <EmptyState icon={FileArchive} compact>
-          OPEN A PFF OR PROJECT
+          {t("package.empty")}
         </EmptyState>
       )}
     </div>

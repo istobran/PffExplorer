@@ -1,6 +1,7 @@
 import { css, keyframes } from "@emotion/css";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PreviewTextLine } from "@/components/preview/PreviewTextLine";
+import { useI18n } from "@/lib/i18n";
 import { playTypewriterClick, playTypewriterReturn } from "@/lib/sounds";
 
 const TYPEWRITER_CHARS_PER_SECOND = 200;
@@ -23,6 +24,7 @@ export type PreviewTextBlockProps = {
 };
 
 export function PreviewTextBlock(props: PreviewTextBlockProps) {
+  const { t } = useI18n();
   const blockRef = useRef<HTMLDivElement>(null);
   const lastAudibleProgressRef = useRef({ chars: 0, lines: 0 });
   const isLargeText = props.text.length >= LARGE_TEXT_ASYNC_THRESHOLD;
@@ -178,7 +180,7 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
   if (asyncTextLoading || !fullLines) {
     return (
       <div ref={blockRef}>
-        <PreviewTextLoading message="LOADING TEXT PREVIEW..." />
+        <PreviewTextLoading message={t("preview.loading.text")} />
       </div>
     );
   }
@@ -207,7 +209,9 @@ export function PreviewTextBlock(props: PreviewTextBlockProps) {
           cursor={!animationComplete && isLineTyping(animatedLines[index] ?? "", index, elapsedMs)}
         />
       ))}
-      {loadingRemainingText && <PreviewTextLoading message="LOADING REMAINING TEXT..." compact />}
+      {loadingRemainingText && (
+        <PreviewTextLoading message={t("preview.loading.remainingText")} compact />
+      )}
     </div>
   );
 }

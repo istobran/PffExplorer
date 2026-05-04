@@ -6,6 +6,7 @@ import {
   RESOURCE_TABLE_COLUMNS,
   RESOURCE_TABLE_COLUMNS_WITH_ARCHIVE,
 } from "@/components/resource-table/resourceTableLayout";
+import { useI18n } from "@/lib/i18n";
 
 export type ResourceTableHeaderProps = {
   sortKey: SortKey;
@@ -15,6 +16,8 @@ export type ResourceTableHeaderProps = {
 };
 
 export function ResourceTableHeader(props: ResourceTableHeaderProps) {
+  const { t } = useI18n();
+
   return (
     <div
       className={clsx(resourceTableHeaderClass, props.showArchiveColumn && "with-archive-column")}
@@ -27,7 +30,7 @@ export function ResourceTableHeader(props: ResourceTableHeaderProps) {
         asc={props.sortAsc}
         onClick={() => props.onSort("name")}
       >
-        FILENAME
+        {t("resource.header.filename")}
       </HeaderCell>
       {props.showArchiveColumn && (
         <HeaderCell
@@ -35,7 +38,7 @@ export function ResourceTableHeader(props: ResourceTableHeaderProps) {
           asc={props.sortAsc}
           onClick={() => props.onSort("archiveName")}
         >
-          PACKAGE
+          {t("resource.header.package")}
         </HeaderCell>
       )}
       <HeaderCell
@@ -43,28 +46,28 @@ export function ResourceTableHeader(props: ResourceTableHeaderProps) {
         asc={props.sortAsc}
         onClick={() => props.onSort("kind")}
       >
-        TYPE
+        {t("resource.header.type")}
       </HeaderCell>
       <HeaderCell
         active={props.sortKey === "size"}
         asc={props.sortAsc}
         onClick={() => props.onSort("size")}
       >
-        SIZE
+        {t("resource.header.size")}
       </HeaderCell>
       <HeaderCell
         active={props.sortKey === "offset"}
         asc={props.sortAsc}
         onClick={() => props.onSort("offset")}
       >
-        OFFSET
+        {t("resource.header.offset")}
       </HeaderCell>
       <HeaderCell
         active={props.sortKey === "checksum"}
         asc={props.sortAsc}
         onClick={() => props.onSort("checksum")}
       >
-        CHECKSUM
+        {t("resource.header.checksum")}
       </HeaderCell>
     </div>
   );
