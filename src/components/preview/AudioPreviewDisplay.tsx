@@ -239,7 +239,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     const gain = context.createGain();
     source.buffer = audioBuffer;
     analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.58;
+    analyser.smoothingTimeConstant = 0;
     gain.gain.value = volumeRef.current;
 
     source.connect(gain);
@@ -299,11 +299,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
     graph.analyser.getByteFrequencyData(graph.frequencyData);
     const nextHeights = audioBarsFromFrequencyData(graph.frequencyData, AUDIO_BAR_COUNT);
-    setBarHeights((currentHeights) =>
-      nextHeights.map((nextHeight, index) =>
-        Math.round((currentHeights[index] ?? 18) * 0.42 + nextHeight * 0.58),
-      ),
-    );
+    setBarHeights(nextHeights);
 
     graph.frameId = requestAnimationFrame(updateAudioMeter);
   }
@@ -570,9 +566,6 @@ const audioPreviewDisplayClass = css`
     background: var(--green-sel);
     opacity: 0.4;
     box-shadow: 0 0 6px rgba(0, 252, 0, 0.28);
-    transition:
-      height 44ms linear,
-      opacity 120ms linear;
   }
 
   .audio-bars span.playing {
