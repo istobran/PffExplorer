@@ -9,27 +9,13 @@ const sourceDir = path.join(rootDir, "src");
 const sourceFontPath = path.join(sourceDir, "assets/fonts/guangliang-ganbei.ttf");
 const generatedFontDir = path.join(sourceDir, "assets/fonts/generated");
 const generatedFontPath = path.join(generatedFontDir, "guangliang-ganbei-subset.woff2");
-
-const textFileExtensions = new Set([
-  ".css",
-  ".html",
-  ".json",
-  ".md",
-  ".ts",
-  ".tsx",
-]);
-const skippedDirectoryNames = new Set([
-  ".git",
-  "dist",
-  "node_modules",
-  "target",
-]);
+const i18nSourcePath = path.join(sourceDir, "lib/i18n.tsx");
 const cjkOrPunctuationPattern =
   /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/gu;
 
 async function main() {
   const sourceFont = await fs.readFile(sourceFontPath);
-  const characters = await collectUsedChineseCharacters(sourceDir);
+  const characters = await collectUsedChineseCharacters();
 
   if (characters.length === 0) {
     throw new Error("No Chinese glyphs were found while generating the Chinese font subset.");
@@ -49,40 +35,15 @@ async function main() {
   );
 }
 
-async function collectUsedChineseCharacters(directory) {
+async function collectUsedChineseCharacters() {
   const characters = new Set();
-  const files = await collectTextFiles(directory);
+  const content = await fs.readFile(i18nSourcePath, "utf8");
 
-  for (const file of files) {
-    const content = await fs.readFile(file, "utf8");
-
-    for (const match of content.matchAll(cjkOrPunctuationPattern)) {
-      characters.add(match[0]);
-    }
+  for (const match of content.matchAll(cjkOrPunctuationPattern)) {
+    characters.add(match[0]);
   }
 
   return Array.from(characters).sort((left, right) => left.localeCompare(right, "zh-CN"));
-}
-
-async function collectTextFiles(directory) {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const files = [];
-
-  for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      if (skippedDirectoryNames.has(entry.name)) continue;
-      files.push(...await collectTextFiles(entryPath));
-      continue;
-    }
-
-    if (!entry.isFile()) continue;
-    if (!textFileExtensions.has(path.extname(entry.name).toLowerCase())) continue;
-    files.push(entryPath);
-  }
-
-  return files;
 }
 
 async function writeIfChanged(filePath, content) {
