@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { css } from "@emotion/css";
+import { SearchX } from "lucide-react";
 import type { ResourceTableRow, SortKey } from "@/types";
 import { entryKey } from "@/lib/format";
 import { EmptyState } from "@/components/EmptyState";
@@ -267,7 +268,7 @@ export function ResourceTable(props: ResourceTableProps) {
       />
 
       {props.rows.length === 0 ? (
-        <EmptyState marker="0">{t("resource.empty")}</EmptyState>
+        <EmptyState icon={SearchX}>{t("resource.empty")}</EmptyState>
       ) : (
         <div
           id="tbl-body"
