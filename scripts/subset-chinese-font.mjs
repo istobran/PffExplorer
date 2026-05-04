@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createFont, woff2 } from "fonteditor-core";
 import subsetFont from "subset-font";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,6 +13,7 @@ const generatedFontPath = path.join(generatedFontDir, "guangliang-ganbei-subset.
 const i18nSourcePath = path.join(sourceDir, "lib/i18n.tsx");
 const cjkOrPunctuationPattern =
   /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/gu;
+const glyphShiftEm = Number(process.env.PFF_EXPLORER_CHINESE_FONT_SHIFT_EM ?? "0.10");
 
 async function main() {
   const sourceFont = await fs.readFile(sourceFontPath);
@@ -21,9 +23,10 @@ async function main() {
     throw new Error("No Chinese glyphs were found while generating the Chinese font subset.");
   }
 
-  const subset = await subsetFont(sourceFont, characters.join(""), {
-    targetFormat: "woff2",
+  const subsetSfnt = await subsetFont(sourceFont, characters.join(""), {
+    targetFormat: "sfnt",
   });
+  const subset = await shiftGlyphsUp(subsetSfnt, glyphShiftEm);
 
   await fs.mkdir(generatedFontDir, { recursive: true });
   await writeIfChanged(generatedFontPath, subset);
@@ -33,6 +36,47 @@ async function main() {
   console.log(
     `[fonts] GuangLiang GanBei subset: ${characters.length} glyphs, ${originalSize} -> ${subsetSize}`,
   );
+}
+
+async function shiftGlyphsUp(fontBuffer, shiftEm) {
+  await woff2.init();
+
+  const font = createFont(fontBuffer, {
+    type: "ttf",
+    compound2simple: true,
+  });
+  const ttf = font.get();
+  const unitsPerEm = ttf.head?.unitsPerEm ?? 1000;
+  const yOffset = Math.round(unitsPerEm * shiftEm);
+
+  if (yOffset !== 0) {
+    for (const glyph of ttf.glyf ?? []) {
+      translateGlyph(glyph, yOffset);
+    }
+  }
+
+  font.set(ttf);
+  return font.write({
+    type: "woff2",
+    toBuffer: true,
+  });
+}
+
+function translateGlyph(glyph, yOffset) {
+  if (!glyph?.contours?.length) return;
+
+  for (const contour of glyph.contours) {
+    for (const point of contour) {
+      point.y += yOffset;
+    }
+  }
+
+  if (typeof glyph.yMin === "number") {
+    glyph.yMin += yOffset;
+  }
+  if (typeof glyph.yMax === "number") {
+    glyph.yMax += yOffset;
+  }
 }
 
 async function collectUsedChineseCharacters() {
