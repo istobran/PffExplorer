@@ -47,7 +47,7 @@ export const toolbarButtonClass = css`
   &:hover {
     border-color: var(--green-sel);
     color: var(--hover-text);
-    background: var(--hover-row);
+    background: var(--sel-row);
     font-weight: var(--hover-text-weight);
     box-shadow: none;
     text-shadow: var(--hover-text-glow);
