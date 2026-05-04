@@ -113,6 +113,7 @@ pub struct ImagePreview {
 pub struct AudioPreview {
     pub data_url: Option<String>,
     pub file_path: Option<String>,
+    pub preview_url: Option<String>,
     pub format: String,
     pub mime_type: String,
     pub codec: String,

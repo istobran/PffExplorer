@@ -5,6 +5,7 @@ use tauri::Manager;
 use walkdir::WalkDir;
 
 use super::archive::{ExtractedData, PffArchive};
+use super::audio_cache::AudioPreviewCache;
 use super::error::PffError;
 use super::models::{
     ArchiveSummary, ExportMode, ExportRequest, ExportResult, PreviewResponse, ResourceEntry,
@@ -49,6 +50,7 @@ pub async fn preview_entry(
         .app_cache_dir()
         .map_err(|error| format!("preview cache path failed: {error}"))?
         .join("previews");
+    let audio_cache = app.state::<AudioPreviewCache>().inner().clone();
 
     tauri::async_runtime::spawn_blocking(move || {
         let archive = PffArchive::open(archive_path).map_err(command_error)?;
@@ -58,15 +60,13 @@ pub async fn preview_entry(
         let ExtractedData { data, transforms } =
             archive.extract_decoded(entry).map_err(command_error)?;
 
-        fs::create_dir_all(&preview_cache_dir)
-            .map_err(PffError::from)
-            .map_err(command_error)?;
         Ok(preview_from_bytes(
             &archive.path,
             entry,
             data,
             transforms,
             Some(&preview_cache_dir),
+            Some(&audio_cache),
         ))
     })
     .await

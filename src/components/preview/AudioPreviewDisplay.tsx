@@ -3,27 +3,21 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
-import {
-  getSharedAudioContext,
-  playUiHover,
-  playUiPress,
-  resumeSharedAudioContext,
-} from "@/lib/sounds";
+import { playUiHover, playUiPress } from "@/lib/sounds";
 
 const AUDIO_BAR_COUNT = 18;
 const IDLE_AUDIO_BAR_HEIGHTS = Array.from({ length: AUDIO_BAR_COUNT }, () => 18);
 
 type AudioMeterGraph = {
-  element: HTMLAudioElement;
   context: AudioContext;
   analyser: AnalyserNode;
-  source: MediaElementAudioSourceNode;
+  source: AudioBufferSourceNode;
   gain: GainNode;
   frequencyData: Uint8Array;
   frameId: number | null;
+  startedAt: number;
+  duration: number;
 };
-
-const capturedSources = new WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>();
 
 export type AudioPreviewDisplayProps = {
   audio: AudioPreview;
@@ -43,12 +37,21 @@ export function AudioPreviewLoadingBox() {
 }
 
 export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
-  const audioRef = useRef<HTMLAudioElement>(null);
   const audioMeterRef = useRef<AudioMeterGraph | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const previewAudioContextRef = useRef<AudioContext | null>(null);
+  const playbackRequestRef = useRef(0);
+  const playbackOffsetRef = useRef(0);
+  const volumeRef = useRef(1);
+  const pausedRef = useRef(true);
+  const currentTimeRef = useRef(0);
+  const durationRef = useRef(props.audio.durationSeconds ?? 0);
   const audioSrc = useMemo(() => {
+    if (props.audio.previewUrl) return props.audio.previewUrl;
+    if (props.audio.dataUrl) return props.audio.dataUrl;
     if (props.audio.filePath) return convertFileSrc(props.audio.filePath);
-    return props.audio.dataUrl;
-  }, [props.audio.dataUrl, props.audio.filePath]);
+    return null;
+  }, [props.audio.dataUrl, props.audio.filePath, props.audio.previewUrl]);
   const [paused, setPaused] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(props.audio.durationSeconds ?? 0);
@@ -57,32 +60,28 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const [barHeights, setBarHeights] = useState(IDLE_AUDIO_BAR_HEIGHTS);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) return;
+    if (!audioSrc) return;
 
-    stopAudioMeter();
-    setPaused(true);
-    setCurrentTime(0);
-    setDuration(props.audio.durationSeconds ?? 0);
+    const requestId = nextPlaybackRequest();
+    stopPlayback({ resetOffset: true });
+    audioBufferRef.current = null;
+    setPausedState(true);
+    setCurrentTimeState(0);
+    setDurationState(props.audio.durationSeconds ?? 0);
     setLoadFailed(false);
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
 
-    audio.load();
-    applyPlaybackVolume(volume);
+    void loadAndPlayAudio(audioSrc, requestId);
 
-    void resumeSharedAudioContext();
-
-    const playPromise = audio.play();
-    if (playPromise) {
-      void playPromise.then(startAudioMeter).catch(() => {
-        stopAudioMeter();
-      });
-    }
-
-    return stopAudioMeter;
+    return () => {
+      playbackRequestRef.current += 1;
+      stopPlayback({ resetOffset: true });
+      audioBufferRef.current = null;
+    };
   }, [audioSrc, props.animationKey, props.audio.durationSeconds]);
 
   useEffect(() => {
+    volumeRef.current = volume;
     applyPlaybackVolume(volume);
   }, [volume]);
 
@@ -104,86 +103,195 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  function stopAudioMeter() {
-    const graph = audioMeterRef.current;
-    if (!graph) return;
+  function setPausedState(nextPaused: boolean) {
+    pausedRef.current = nextPaused;
+    setPaused(nextPaused);
+  }
 
+  function setCurrentTimeState(nextCurrentTime: number) {
+    currentTimeRef.current = nextCurrentTime;
+    setCurrentTime(nextCurrentTime);
+  }
+
+  function setDurationState(nextDuration: number) {
+    durationRef.current = nextDuration;
+    setDuration(nextDuration);
+  }
+
+  function getPreviewAudioContext() {
+    if (previewAudioContextRef.current) return previewAudioContextRef.current;
+    if (typeof window === "undefined") return null;
+
+    const AudioContextCtor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return null;
+
+    const context = new AudioContextCtor({ latencyHint: "interactive" });
+    previewAudioContextRef.current = context;
+    return context;
+  }
+
+  function nextPlaybackRequest() {
+    playbackRequestRef.current += 1;
+    return playbackRequestRef.current;
+  }
+
+  function isActivePlaybackRequest(requestId: number) {
+    return playbackRequestRef.current === requestId;
+  }
+
+  function cleanupGraph(graph: AudioMeterGraph, options: { stopSource: boolean }) {
     if (graph.frameId !== null) {
       cancelAnimationFrame(graph.frameId);
     }
-    graph.gain.disconnect();
-    graph.analyser.disconnect();
+
+    graph.source.onended = null;
+    if (options.stopSource) {
+      try {
+        graph.source.stop();
+      } catch {
+        // The source may have already ended.
+      }
+    }
+
     try {
       graph.source.disconnect();
     } catch {
       // ignore
     }
-    audioMeterRef.current = null;
+    graph.gain.disconnect();
+    graph.analyser.disconnect();
+  }
+
+  function stopPlayback(options: { resetOffset?: boolean } = {}) {
+    const graph = audioMeterRef.current;
+    if (graph) {
+      cleanupGraph(graph, { stopSource: true });
+      audioMeterRef.current = null;
+    }
+
+    if (options.resetOffset) {
+      playbackOffsetRef.current = 0;
+    }
+
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
   }
 
-  async function startAudioMeter() {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    let graph = audioMeterRef.current;
-    if (!graph || graph.element !== audio) {
-      stopAudioMeter();
-
-      const context = getSharedAudioContext();
-      if (!context) return;
-
-      if (context.state === "suspended") {
-        await resumeSharedAudioContext();
-      }
-      if (context.state !== "running") return;
-
-      let source = capturedSources.get(audio);
-      if (!source) {
-        try {
-          source = context.createMediaElementSource(audio);
-          capturedSources.set(audio, source);
-        } catch {
-          return;
-        }
-      }
-
-      const analyser = context.createAnalyser();
-      const gain = context.createGain();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.58;
-      gain.gain.value = volume;
-
-      try {
-        source.disconnect();
-      } catch {
-        // ignore
-      }
-      source.connect(gain);
-      gain.connect(analyser);
-      analyser.connect(context.destination);
-
-      graph = {
-        element: audio,
-        context,
-        analyser,
-        source,
-        gain,
-        frequencyData: new Uint8Array(analyser.frequencyBinCount),
-        frameId: null,
-      };
-      audioMeterRef.current = graph;
-      audio.volume = 1;
+  async function loadAndPlayAudio(source: string, requestId: number) {
+    const context = getPreviewAudioContext();
+    if (!context) {
+      setLoadFailed(true);
+      return;
     }
 
-    if (graph.frameId === null) {
-      updateAudioMeter();
+    try {
+      const response = await fetch(source);
+      const encodedAudio = await response.arrayBuffer();
+      const audioBuffer = await context.decodeAudioData(encodedAudio.slice(0));
+      if (!isActivePlaybackRequest(requestId)) return;
+
+      audioBufferRef.current = audioBuffer;
+      setDurationState(audioBuffer.duration);
+      await startBufferPlayback({ requestId, restart: true });
+    } catch {
+      if (!isActivePlaybackRequest(requestId)) return;
+
+      setLoadFailed(true);
+      stopPlayback({ resetOffset: true });
+      setPausedState(true);
     }
+  }
+
+  async function startBufferPlayback(
+    options: { requestId?: number; restart?: boolean } = {},
+  ) {
+    const audioBuffer = audioBufferRef.current;
+    const context = previewAudioContextRef.current;
+    if (!audioBuffer || !context) return;
+
+    const requestId = options.requestId ?? nextPlaybackRequest();
+    const restart = options.restart ?? false;
+    stopPlayback({ resetOffset: restart });
+
+    let offset = restart ? 0 : playbackOffsetRef.current;
+    if (offset >= audioBuffer.duration - 0.005) {
+      offset = 0;
+    }
+    offset = Math.max(0, Math.min(offset, audioBuffer.duration));
+    playbackOffsetRef.current = offset;
+    setCurrentTimeState(offset);
+
+    if (context.state === "suspended") {
+      await context.resume();
+    }
+    if (!isActivePlaybackRequest(requestId)) return;
+    if (context.state !== "running") {
+      throw new Error("Audio context is not running");
+    }
+
+    const source = context.createBufferSource();
+    const analyser = context.createAnalyser();
+    const gain = context.createGain();
+    source.buffer = audioBuffer;
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.58;
+    gain.gain.value = volumeRef.current;
+
+    source.connect(gain);
+    gain.connect(analyser);
+    analyser.connect(context.destination);
+
+    const graph: AudioMeterGraph = {
+      context,
+      analyser,
+      source,
+      gain,
+      frequencyData: new Uint8Array(analyser.frequencyBinCount),
+      frameId: null,
+      startedAt: context.currentTime - offset,
+      duration: audioBuffer.duration,
+    };
+
+    source.onended = () => {
+      const currentGraph = audioMeterRef.current;
+      if (currentGraph?.source !== source) return;
+
+      cleanupGraph(currentGraph, { stopSource: false });
+      audioMeterRef.current = null;
+      playbackOffsetRef.current = 0;
+      setCurrentTimeState(audioBuffer.duration);
+      setPausedState(true);
+      setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
+    };
+
+    audioMeterRef.current = graph;
+    setPausedState(false);
+    setLoadFailed(false);
+    source.start(0, offset);
+    updateAudioMeter();
+  }
+
+  function startLoadedAudio(options: { restart?: boolean } = {}) {
+    const requestId = nextPlaybackRequest();
+    void startBufferPlayback({ ...options, requestId }).catch(() => {
+      if (!isActivePlaybackRequest(requestId)) return;
+      setLoadFailed(true);
+      stopPlayback();
+      setPausedState(true);
+    });
   }
 
   function updateAudioMeter() {
     const graph = audioMeterRef.current;
     if (!graph) return;
+
+    const nextTime = Math.min(
+      graph.duration,
+      Math.max(0, graph.context.currentTime - graph.startedAt),
+    );
+    playbackOffsetRef.current = nextTime;
+    setCurrentTimeState(nextTime);
 
     graph.analyser.getByteFrequencyData(graph.frequencyData);
     const nextHeights = audioBarsFromFrequencyData(graph.frequencyData, AUDIO_BAR_COUNT);
@@ -196,74 +304,64 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     graph.frameId = requestAnimationFrame(updateAudioMeter);
   }
 
-  function pauseAudioMeter() {
+  function pausePlayback() {
     const graph = audioMeterRef.current;
-    if (graph?.frameId !== null && graph?.frameId !== undefined) {
-      cancelAnimationFrame(graph.frameId);
-      graph.frameId = null;
+    playbackRequestRef.current += 1;
+
+    if (graph) {
+      const nextTime = Math.min(
+        graph.duration,
+        Math.max(0, graph.context.currentTime - graph.startedAt),
+      );
+      playbackOffsetRef.current = nextTime;
+      setCurrentTimeState(nextTime);
+      cleanupGraph(graph, { stopSource: true });
+      audioMeterRef.current = null;
     }
+
+    setPausedState(true);
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
   }
 
-  function handleLoadedMetadata() {
-    const audio = audioRef.current;
-    if (!audio || !Number.isFinite(audio.duration)) return;
-    setDuration(audio.duration);
-  }
-
   function togglePlayback() {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (audio.paused) {
-      void startAudioMeter();
-      void audio.play().catch(() => {
-        pauseAudioMeter();
+    if (pausedRef.current) {
+      startLoadedAudio({
+        restart: currentTimeRef.current >= durationRef.current - 0.005,
       });
     } else {
-      audio.pause();
+      pausePlayback();
     }
   }
 
   function restartPlayback() {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.currentTime = 0;
-    setCurrentTime(0);
-    void startAudioMeter();
-    void audio.play().catch(() => {
-      pauseAudioMeter();
-    });
+    startLoadedAudio({ restart: true });
   }
 
   function seek(value: string) {
-    const audio = audioRef.current;
-    if (!audio) return;
-
     const nextTime = Number(value);
-    audio.currentTime = nextTime;
-    setCurrentTime(nextTime);
+    const clampedTime = Math.max(0, Math.min(durationRef.current, nextTime));
+    playbackOffsetRef.current = clampedTime;
+    setCurrentTimeState(clampedTime);
+
+    if (!pausedRef.current) {
+      startLoadedAudio();
+    }
   }
 
   function changeVolume(value: string) {
     const nextVolume = Number(value);
+    volumeRef.current = nextVolume;
     setVolume(nextVolume);
     applyPlaybackVolume(nextVolume);
   }
 
   function applyPlaybackVolume(nextVolume: number) {
-    const audio = audioRef.current;
     const clampedVolume = Math.max(0, Math.min(2, nextVolume));
     const graph = audioMeterRef.current;
 
     if (graph) {
       graph.gain.gain.value = clampedVolume;
-      if (audio) audio.volume = 1;
-      return;
     }
-
-    if (audio) audio.volume = Math.min(1, clampedVolume);
   }
 
   const progressMax = Math.max(duration, 0.001);
@@ -278,31 +376,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
   return (
     <div className={audioPreviewDisplayClass}>
-      <audio
-        key={props.animationKey}
-        ref={audioRef}
-        preload="auto"
-        src={audioSrc ?? undefined}
-        onLoadedMetadata={handleLoadedMetadata}
-        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-        onPlay={() => {
-          setPaused(false);
-          void startAudioMeter();
-        }}
-        onPause={() => {
-          setPaused(true);
-          pauseAudioMeter();
-        }}
-        onEnded={() => {
-          setPaused(true);
-          pauseAudioMeter();
-        }}
-        onError={() => {
-          setLoadFailed(true);
-          stopAudioMeter();
-        }}
-      />
-
       <div className="audio-shell">
         <div className="audio-visual" aria-hidden="true">
           <AudioLines className="audio-icon" size={28} />
@@ -435,10 +508,6 @@ const audioPreviewDisplayClass = css`
   align-items: center;
   justify-content: center;
   overflow: hidden;
-
-  audio {
-    display: none;
-  }
 
   .audio-shell {
     width: min(100%, 420px);

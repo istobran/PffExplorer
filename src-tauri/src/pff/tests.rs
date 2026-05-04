@@ -169,6 +169,7 @@ fn previews_wav_audio() {
         fixture_wav(),
         Vec::new(),
         None,
+        None,
     );
 
     assert!(matches!(preview.status, PreviewStatus::Audio));
@@ -202,6 +203,7 @@ fn preview_image_transforms_show_source_format_only() {
         &entry,
         data,
         vec!["BFC1".to_string()],
+        None,
         None,
     );
 
@@ -284,7 +286,7 @@ fn previews_external_sample_audio_when_env_is_set() {
         saw_audio = true;
         let ExtractedData { data, transforms } =
             archive.extract_decoded(entry).expect("audio bytes extract");
-        let preview = preview_from_bytes(Path::new(&path), entry, data, transforms, None);
+        let preview = preview_from_bytes(Path::new(&path), entry, data, transforms, None, None);
 
         if matches!(preview.status, PreviewStatus::Audio) {
             let audio = preview.audio.expect("audio preview");

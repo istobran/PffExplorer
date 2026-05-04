@@ -1,9 +1,18 @@
 mod config;
 mod pff;
 
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(pff::audio_cache::AudioPreviewCache::default())
+        .register_uri_scheme_protocol("pff-explorer", |ctx, request| {
+            let cache = ctx
+                .app_handle()
+                .state::<pff::audio_cache::AudioPreviewCache>();
+            pff::audio_cache::handle_protocol(cache.inner(), request)
+        })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![

@@ -1,4 +1,5 @@
 mod archive;
+pub(crate) mod audio_cache;
 pub(crate) mod commands;
 mod error;
 mod models;

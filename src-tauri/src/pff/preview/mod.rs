@@ -8,8 +8,9 @@ use std::hash::{Hash, Hasher};
 use std::path::Path;
 
 use super::archive::PffEntry;
+use super::audio_cache::AudioPreviewCache;
 use super::models::{PreviewResponse, PreviewStatus};
-use audio::{audio_preview_from_bytes_with_cache, is_previewable_audio};
+use audio::{audio_preview_from_bytes, is_previewable_audio};
 use image::{image_preview_from_bytes_with_cache, is_previewable_image};
 use text::is_previewable_text;
 
@@ -21,9 +22,13 @@ pub(crate) fn preview_from_bytes(
     data: Vec<u8>,
     transforms: Vec<String>,
     preview_cache_dir: Option<&Path>,
+    audio_cache: Option<&AudioPreviewCache>,
 ) -> PreviewResponse {
     let byte_len = data.len();
     let hex_head = hex_head(&data, 96);
+    if let Some(cache) = audio_cache {
+        cache.clear();
+    }
 
     if is_previewable_image(&entry.name) {
         let cache_key = preview_cache_key(archive_path, entry, byte_len);
@@ -62,8 +67,7 @@ pub(crate) fn preview_from_bytes(
 
     if is_previewable_audio(&entry.name, &data) {
         let cache_key = preview_cache_key(archive_path, entry, byte_len);
-        match audio_preview_from_bytes_with_cache(&entry.name, &data, preview_cache_dir, &cache_key)
-        {
+        match audio_preview_from_bytes(&entry.name, &data, audio_cache, &cache_key) {
             Ok(audio_result) => {
                 return PreviewResponse {
                     status: PreviewStatus::Audio,

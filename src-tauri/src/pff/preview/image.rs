@@ -39,6 +39,7 @@ pub(super) fn image_preview_from_bytes_with_cache(
         })?;
 
     if let Some(preview_cache_dir) = preview_cache_dir {
+        fs::create_dir_all(preview_cache_dir)?;
         let preview_path = preview_cache_dir.join(format!("{cache_key}.png"));
         fs::write(&preview_path, &png)?;
 

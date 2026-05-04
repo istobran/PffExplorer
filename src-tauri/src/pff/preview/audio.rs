@@ -1,6 +1,4 @@
-use std::fs;
 use std::io::{self, Cursor};
-use std::path::Path;
 
 use symphonia::core::audio::SampleBuffer;
 use symphonia::core::codecs::{CodecParameters, CodecType, DecoderOptions, CODEC_TYPE_NULL};
@@ -10,6 +8,7 @@ use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
+use super::super::audio_cache::AudioPreviewCache;
 use super::super::error::PffError;
 use super::super::models::AudioPreview;
 use super::super::transform::MAX_DECODED_SIZE;
@@ -30,35 +29,27 @@ struct DecodedAudio {
     duration_seconds: Option<f64>,
 }
 
-pub(super) fn audio_preview_from_bytes_with_cache(
+pub(super) fn audio_preview_from_bytes(
     name: &str,
     data: &[u8],
-    preview_cache_dir: Option<&Path>,
+    audio_cache: Option<&AudioPreviewCache>,
     cache_key: &str,
 ) -> Result<AudioPreviewResult, PffError> {
     let decoded = decode_audio_to_pcm(name, data)?;
     let playback_data = write_pcm_wav(decoded.sample_rate, decoded.channels, 16, &decoded.pcm);
     let mime_type = "audio/wav";
 
-    let (data_url, file_path) = if let Some(preview_cache_dir) = preview_cache_dir {
-        let preview_path = preview_cache_dir.join(format!("{cache_key}.wav"));
-        fs::write(&preview_path, &playback_data)?;
-        (None, Some(preview_path.to_string_lossy().into_owned()))
+    let (data_url, preview_url) = if let Some(cache) = audio_cache {
+        (None, Some(cache.store(cache_key, mime_type, playback_data)))
     } else {
-        let data_url = {
-            use base64::Engine as _;
-            format!(
-                "data:{mime_type};base64,{}",
-                base64::engine::general_purpose::STANDARD.encode(playback_data)
-            )
-        };
-        (Some(data_url), None)
+        (Some(audio_data_url(mime_type, &playback_data)), None)
     };
 
     Ok(AudioPreviewResult {
         preview: AudioPreview {
             data_url,
-            file_path,
+            file_path: None,
+            preview_url,
             format: decoded.format,
             mime_type: mime_type.to_string(),
             codec: decoded.codec,
@@ -68,6 +59,15 @@ pub(super) fn audio_preview_from_bytes_with_cache(
             duration_seconds: decoded.duration_seconds,
         },
     })
+}
+
+fn audio_data_url(mime_type: &str, data: &[u8]) -> String {
+    use base64::Engine as _;
+
+    format!(
+        "data:{mime_type};base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(data)
+    )
 }
 
 fn decode_audio_to_pcm(name: &str, data: &[u8]) -> Result<DecodedAudio, PffError> {
