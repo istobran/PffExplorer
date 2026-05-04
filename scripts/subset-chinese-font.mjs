@@ -13,7 +13,7 @@ const generatedFontPath = path.join(generatedFontDir, "guangliang-ganbei-subset.
 const i18nSourcePath = path.join(sourceDir, "lib/i18n.tsx");
 const cjkOrPunctuationPattern =
   /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/gu;
-const glyphShiftEm = Number(process.env.PFF_EXPLORER_CHINESE_FONT_SHIFT_EM ?? "0.10");
+const glyphShiftEm = Number(process.env.PFF_EXPLORER_CHINESE_FONT_SHIFT_EM ?? "0.05");
 
 async function main() {
   const sourceFont = await fs.readFile(sourceFontPath);

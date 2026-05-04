@@ -40,8 +40,8 @@
 }
 
 :root[lang="zh-CN"] {
-  --font-mono: "GuangLiang GanBei", "Science Gothic", "Courier New", monospace;
-  --font-vt: "GuangLiang GanBei", "Science Gothic", "Courier New", monospace;
+  --font-mono: "Science Gothic", "GuangLiang GanBei", "Courier New", monospace;
+  --font-vt: "Science Gothic", "GuangLiang GanBei", "Courier New", monospace;
 }
 
 *,
