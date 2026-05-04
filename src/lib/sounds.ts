@@ -1,4 +1,5 @@
 import click9Url from "@/assets/audios/click9.wav";
+import dialogOpenUrl from "@/assets/audios/bump1.wav";
 import missionBriefingSelectUrl from "@/assets/audios/beep1.wav";
 import missionSwitchUrl from "@/assets/audios/beep2.wav";
 import menuButtonUrl from "@/assets/audios/menubtn1.wav";
@@ -33,6 +34,7 @@ const TYPEWRITER_CLICK_URLS = [
 
 const TYPEWRITER_RETURN_URLS = [ttReturn1Url, ttReturn2Url, ttReturn3Url];
 const ESSENTIAL_SOUND_URLS = [
+  dialogOpenUrl,
   click9Url,
   missionBriefingSelectUrl,
   missionSwitchUrl,
@@ -144,6 +146,14 @@ export function playWhoosh() {
     key: "whoosh",
     volume: 0.52,
     throttleMs: 120,
+  });
+}
+
+export function playDialogOpen() {
+  playSound(dialogOpenUrl, {
+    key: "dialog-open",
+    volume: 0.42,
+    throttleMs: 260,
   });
 }
 

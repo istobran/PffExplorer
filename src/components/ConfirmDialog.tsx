@@ -1,10 +1,10 @@
 import { css } from "@emotion/css";
 import clsx from "clsx";
 import { AlertTriangle } from "lucide-react";
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { ToolbarButton } from "@/components/toolbar/ToolbarButton";
 import { PanelCorners } from "@/components/panel/PanelCorners";
-import { playTypewriterClick, playTypewriterReturn } from "@/lib/sounds";
+import { playDialogOpen, playTypewriterClick, playTypewriterReturn } from "@/lib/sounds";
 
 export type ConfirmDialogProps = {
   title: string;
@@ -18,12 +18,20 @@ export type ConfirmDialogProps = {
 };
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
+  const playedOpenSoundRef = useRef(false);
   const messageCharacters = Array.from(props.message);
   const detailCharacters = Array.from(props.detail ?? "");
   const messagePrintMs = Math.min(
     900,
     (messageCharacters.length + detailCharacters.length) * 8,
   );
+
+  useEffect(() => {
+    if (props.closing || playedOpenSoundRef.current) return;
+
+    playedOpenSoundRef.current = true;
+    playDialogOpen();
+  }, [props.closing]);
 
   useEffect(() => {
     if (props.closing || prefersReducedMotion()) return;
