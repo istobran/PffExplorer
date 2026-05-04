@@ -3,12 +3,15 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
-import { playUiHover, playUiPress } from "@/lib/sounds";
+import {
+  getSharedAudioContext,
+  playUiHover,
+  playUiPress,
+  resumeSharedAudioContext,
+} from "@/lib/sounds";
 
 const AUDIO_BAR_COUNT = 18;
 const IDLE_AUDIO_BAR_HEIGHTS = Array.from({ length: AUDIO_BAR_COUNT }, () => 18);
-
-type AudioContextConstructor = typeof AudioContext;
 
 type AudioMeterGraph = {
   element: HTMLAudioElement;
@@ -19,6 +22,8 @@ type AudioMeterGraph = {
   frequencyData: Uint8Array;
   frameId: number | null;
 };
+
+const capturedSources = new WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>();
 
 export type AudioPreviewDisplayProps = {
   audio: AudioPreview;
@@ -65,6 +70,8 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     audio.load();
     applyPlaybackVolume(volume);
 
+    void resumeSharedAudioContext();
+
     const playPromise = audio.play();
     if (playPromise) {
       void playPromise.then(startAudioMeter).catch(() => {
@@ -104,10 +111,13 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     if (graph.frameId !== null) {
       cancelAnimationFrame(graph.frameId);
     }
-    graph.source.disconnect();
     graph.gain.disconnect();
     graph.analyser.disconnect();
-    void graph.context.close().catch(() => undefined);
+    try {
+      graph.source.disconnect();
+    } catch {
+      // ignore
+    }
     audioMeterRef.current = null;
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
   }
@@ -120,27 +130,35 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     if (!graph || graph.element !== audio) {
       stopAudioMeter();
 
-      const AudioContextClass =
-        window.AudioContext ??
-        (window as typeof window & { webkitAudioContext?: AudioContextConstructor })
-          .webkitAudioContext;
-      if (!AudioContextClass) return;
+      const context = getSharedAudioContext();
+      if (!context) return;
 
-      const context = new AudioContextClass({ latencyHint: "interactive" });
+      if (context.state === "suspended") {
+        await resumeSharedAudioContext();
+      }
+      if (context.state !== "running") return;
+
+      let source = capturedSources.get(audio);
+      if (!source) {
+        try {
+          source = context.createMediaElementSource(audio);
+          capturedSources.set(audio, source);
+        } catch {
+          return;
+        }
+      }
+
       const analyser = context.createAnalyser();
       const gain = context.createGain();
       analyser.fftSize = 1024;
       analyser.smoothingTimeConstant = 0.58;
       gain.gain.value = volume;
 
-      let source: MediaElementAudioSourceNode;
       try {
-        source = context.createMediaElementSource(audio);
+        source.disconnect();
       } catch {
-        void context.close().catch(() => undefined);
-        return;
+        // ignore
       }
-
       source.connect(gain);
       gain.connect(analyser);
       analyser.connect(context.destination);
@@ -156,10 +174,6 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
       };
       audioMeterRef.current = graph;
       audio.volume = 1;
-    }
-
-    if (graph.context.state === "suspended") {
-      await graph.context.resume().catch(() => undefined);
     }
 
     if (graph.frameId === null) {

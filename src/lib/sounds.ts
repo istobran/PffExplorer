@@ -306,6 +306,14 @@ function decodeSound(url: string) {
   return promise;
 }
 
+export function getSharedAudioContext() {
+  return getAudioContext();
+}
+
+export function resumeSharedAudioContext() {
+  return resumeAudioContext();
+}
+
 function getAudioContext() {
   if (audioContext) return audioContext;
   if (typeof window === "undefined") return null;
