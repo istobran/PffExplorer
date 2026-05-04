@@ -116,7 +116,7 @@ const translations = {
     "status.savedPackages": "SAVED PACKAGES",
   },
   "zh-CN": {
-    "app.title": "PFF 资源管理器",
+    "app.title": "PFF资源查看器",
     "app.packageCount": "{count} 个 PFF",
     "app.fileCount": "{count} 个文件",
     "app.exportedCount": "已导出 {exported}/{total}",

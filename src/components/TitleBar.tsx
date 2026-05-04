@@ -60,8 +60,8 @@ export function TitleBar(props: TitleBarProps) {
         enabled={props.backgroundMusicEnabled}
         onToggle={props.onToggleBackgroundMusic}
       />
-      <LanguageToggleButton locale={props.locale} onToggle={props.onToggleLocale} />
       <SoundToggleButton muted={props.soundMuted} onToggle={props.onToggleSoundMuted} />
+      <LanguageToggleButton locale={props.locale} onToggle={props.onToggleLocale} />
       <div className="win-controls">
         <WindowControlButton
           icon={Minus}
