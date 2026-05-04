@@ -7,6 +7,15 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "GuangLiang GanBei";
+  src: url("../fonts/generated/guangliang-ganbei-subset.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+3000-303F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+}
+
 :root {
   --bg: #050c05;
   --panel-bg: #070e07;
@@ -28,6 +37,11 @@
   --font-mono: "Science Gothic", "Courier New", monospace;
   --font-vt: "Science Gothic", "Courier New", monospace;
   --cursor-crosshair: url("../images/df1-cursor.png") 11 11;
+}
+
+:root[lang="zh-CN"] {
+  --font-mono: "GuangLiang GanBei", "Science Gothic", "Courier New", monospace;
+  --font-vt: "GuangLiang GanBei", "Science Gothic", "Courier New", monospace;
 }
 
 *,

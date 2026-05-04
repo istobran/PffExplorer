@@ -5,7 +5,10 @@
   "type": "module",
   "packageManager": "pnpm@10.26.2",
   "scripts": {
+    "subset:fonts": "node scripts/subset-chinese-font.mjs",
+    "predev": "pnpm subset:fonts",
     "dev": "vite",
+    "prebuild": "pnpm subset:fonts",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -28,6 +31,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "subset-font": "^2.5.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
   }
