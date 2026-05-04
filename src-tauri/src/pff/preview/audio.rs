@@ -71,12 +71,25 @@ fn audio_data_url(mime_type: &str, data: &[u8]) -> String {
 }
 
 fn decode_audio_to_pcm(name: &str, data: &[u8]) -> Result<DecodedAudio, PffError> {
+    if let Some(mp3_payload) = mp3_payload_from_wav(name, data)? {
+        return decode_symphonia_audio(name, &mp3_payload, "mp3", "WAV");
+    }
+
+    let ext = extension(name);
+    decode_symphonia_audio(name, data, &ext, &audio_format_label(name, data))
+}
+
+fn decode_symphonia_audio(
+    name: &str,
+    data: &[u8],
+    hint_extension: &str,
+    source_format: &str,
+) -> Result<DecodedAudio, PffError> {
     let cursor = Cursor::new(data.to_vec());
     let mss = MediaSourceStream::new(Box::new(cursor), MediaSourceStreamOptions::default());
     let mut hint = Hint::new();
-    let ext = extension(name);
-    if !ext.is_empty() {
-        hint.with_extension(&ext);
+    if !hint_extension.is_empty() {
+        hint.with_extension(hint_extension);
     }
 
     let probed = symphonia::default::get_probe()
@@ -87,7 +100,6 @@ fn decode_audio_to_pcm(name: &str, data: &[u8]) -> Result<DecodedAudio, PffError
             &MetadataOptions::default(),
         )
         .map_err(|error| symphonia_audio_error(name, "probe", error))?;
-    let source_format = audio_format_label(name, data);
     let mut format = probed.format;
     let track = format
         .default_track()
@@ -162,7 +174,7 @@ fn decode_audio_to_pcm(name: &str, data: &[u8]) -> Result<DecodedAudio, PffError
 
     Ok(DecodedAudio {
         pcm,
-        format: source_format,
+        format: source_format.to_string(),
         channels,
         sample_rate,
         codec: concise_codec_label(&codec_params),
@@ -177,6 +189,63 @@ fn symphonia_audio_error(name: &str, phase: &str, error: SymphoniaError) -> PffE
     PffError::AudioDecode {
         name: name.to_string(),
         message: format!("{phase} failed: {error}"),
+    }
+}
+
+fn mp3_payload_from_wav(name: &str, data: &[u8]) -> Result<Option<Vec<u8>>, PffError> {
+    const WAVE_FORMAT_MPEGLAYER3: u16 = 0x0055;
+
+    if !is_wav_data(data) {
+        return Ok(None);
+    }
+
+    let mut position = 12_usize;
+    let mut is_mp3_wav = false;
+    let mut mp3_data = None;
+
+    while position + 8 <= data.len() {
+        let chunk_id = &data[position..position + 4];
+        let chunk_size = read_u32_le_at(data, position + 4)
+            .ok_or_else(|| wav_mp3_error(name, "malformed WAV chunk size"))?
+            as usize;
+        let chunk_start = position + 8;
+        let chunk_end = chunk_start
+            .checked_add(chunk_size)
+            .ok_or_else(|| wav_mp3_error(name, "WAV chunk size overflow"))?;
+
+        if chunk_end > data.len() {
+            return Err(wav_mp3_error(name, "WAV chunk exceeds file size"));
+        }
+
+        match chunk_id {
+            b"fmt " => {
+                if chunk_size < 16 {
+                    return Err(wav_mp3_error(name, "WAV fmt chunk is too small"));
+                }
+
+                is_mp3_wav = read_u16_le_at(data, chunk_start) == Some(WAVE_FORMAT_MPEGLAYER3);
+            }
+            b"data" if is_mp3_wav => {
+                mp3_data = Some(data[chunk_start..chunk_end].to_vec());
+                break;
+            }
+            _ => {}
+        }
+
+        position = chunk_end + (chunk_size & 1);
+    }
+
+    if is_mp3_wav && mp3_data.is_none() {
+        return Err(wav_mp3_error(name, "MP3 WAV data chunk was not found"));
+    }
+
+    Ok(mp3_data)
+}
+
+fn wav_mp3_error(name: &str, message: impl Into<String>) -> PffError {
+    PffError::AudioDecode {
+        name: name.to_string(),
+        message: message.into(),
     }
 }
 
@@ -256,6 +325,16 @@ pub(crate) fn is_previewable_audio(name: &str, data: &[u8]) -> bool {
 
 fn is_wav_data(data: &[u8]) -> bool {
     data.len() >= 12 && data.get(0..4) == Some(b"RIFF") && data.get(8..12) == Some(b"WAVE")
+}
+
+fn read_u16_le_at(data: &[u8], offset: usize) -> Option<u16> {
+    let bytes = data.get(offset..offset + 2)?;
+    Some(u16::from_le_bytes([bytes[0], bytes[1]]))
+}
+
+fn read_u32_le_at(data: &[u8], offset: usize) -> Option<u32> {
+    let bytes = data.get(offset..offset + 4)?;
+    Some(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
 }
 
 fn is_mp3_data(data: &[u8]) -> bool {

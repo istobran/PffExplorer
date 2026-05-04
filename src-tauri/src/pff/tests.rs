@@ -312,6 +312,35 @@ fn previews_external_sample_audio_when_env_is_set() {
     }
 }
 
+#[test]
+fn previews_external_mp3_wav_when_env_is_set() {
+    let Ok(path) = std::env::var("PFF_EXPLORER_MP3_WAV_SAMPLE_PFF") else {
+        return;
+    };
+
+    let archive = PffArchive::open(&path).expect("external sample opens");
+    let entry = archive
+        .entries
+        .iter()
+        .find(|entry| !entry.is_deleted() && entry.name.eq_ignore_ascii_case("alert.wav"))
+        .expect("alert.wav exists");
+    let ExtractedData { data, transforms } = archive
+        .extract_decoded(entry)
+        .expect("alert.wav bytes extract");
+    let preview = preview_from_bytes(Path::new(&path), entry, data, transforms, None, None);
+
+    assert!(matches!(preview.status, PreviewStatus::Audio));
+    let audio = preview.audio.expect("audio preview");
+    assert_eq!(audio.format, "WAV");
+    assert_eq!(audio.mime_type, "audio/wav");
+    assert_eq!(audio.codec, "MP3");
+    assert_eq!(audio.sample_rate, Some(11025));
+    assert_eq!(audio.channels, Some(1));
+    assert!(audio
+        .duration_seconds
+        .is_some_and(|duration| duration > 1.5 && duration < 1.8));
+}
+
 #[derive(Clone)]
 struct FixtureEntry {
     flags: u32,
