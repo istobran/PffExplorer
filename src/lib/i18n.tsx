@@ -157,7 +157,7 @@ const translations = {
     "resource.header.type": "类型",
     "resource.header.size": "大小",
     "resource.header.offset": "偏移",
-    "resource.header.checksum": "校验",
+    "resource.header.checksum": "校验和",
 
     "format.type": "类型:",
     "format.all": "全部",
