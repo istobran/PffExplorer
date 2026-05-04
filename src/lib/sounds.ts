@@ -4,6 +4,7 @@ import missionBriefingSelectUrl from "@/assets/audios/beep1.wav";
 import missionSwitchUrl from "@/assets/audios/beep2.wav";
 import menuButtonUrl from "@/assets/audios/menubtn1.wav";
 import menuMusicUrl from "@/assets/audios/menumono.wav";
+import imageRevealUrl from "@/assets/audios/sddst_t.wav";
 import ttClick1Url from "@/assets/audios/ttclick1.wav";
 import ttClick2Url from "@/assets/audios/ttclick2.wav";
 import ttClick3Url from "@/assets/audios/ttclick3.wav";
@@ -39,6 +40,7 @@ const ESSENTIAL_SOUND_URLS = [
   missionBriefingSelectUrl,
   missionSwitchUrl,
   menuButtonUrl,
+  imageRevealUrl,
   whoosh2Url,
 ];
 const ALL_SOUND_URLS = [
@@ -145,6 +147,14 @@ export function playWhoosh() {
   playSound(whoosh2Url, {
     key: "whoosh",
     volume: 0.52,
+    throttleMs: 120,
+  });
+}
+
+export function playImageReveal() {
+  playSound(imageRevealUrl, {
+    key: "image-reveal",
+    volume: 0.42,
     throttleMs: 120,
   });
 }

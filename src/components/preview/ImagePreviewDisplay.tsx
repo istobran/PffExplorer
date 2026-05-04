@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ImagePreview } from "@/types";
 import { useI18n } from "@/lib/i18n";
+import { playImageReveal } from "@/lib/sounds";
 
 const RADAR_STEPS = 8;
 const RADAR_LOOP_STEP_DELAY_MS = 72;
@@ -89,6 +90,8 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
     setRevealDone(false);
 
     if (!decodedSrc || loadFailed) return;
+
+    playImageReveal();
 
     const timer = window.setTimeout(() => {
       setRevealDone(true);
