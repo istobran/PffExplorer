@@ -196,25 +196,27 @@ function App() {
   }, [focusedKey, selectedKeys, visibleRows]);
 
   useEffect(() => {
-    function handleGlobalAudioShortcuts(event: globalThis.KeyboardEvent) {
+    function handleGlobalTitleBarShortcuts(event: globalThis.KeyboardEvent) {
       if (!isPlainKeyShortcut(event) || isEditableShortcutTarget(event.target)) return;
 
       const key = event.key.toLowerCase();
-      if (key !== "b" && key !== "m") return;
+      if (key !== "b" && key !== "m" && key !== "l") return;
 
       event.preventDefault();
       event.stopPropagation();
 
       if (key === "b") {
         toggleBackgroundMusic();
-      } else {
+      } else if (key === "m") {
         toggleSoundMuted();
+      } else {
+        toggleLocale();
       }
     }
 
-    window.addEventListener("keydown", handleGlobalAudioShortcuts, true);
-    return () => window.removeEventListener("keydown", handleGlobalAudioShortcuts, true);
-  }, [backgroundMusicEnabled, soundMuted]);
+    window.addEventListener("keydown", handleGlobalTitleBarShortcuts, true);
+    return () => window.removeEventListener("keydown", handleGlobalTitleBarShortcuts, true);
+  }, [backgroundMusicEnabled, locale, soundMuted]);
 
   useEffect(() => {
     const visibleKeySet = new Set(visibleRows.map((row) => entryKey(row)));
