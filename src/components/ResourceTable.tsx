@@ -340,6 +340,8 @@ const resourceTableClass = css`
     overflow: auto;
     position: relative;
     min-height: 0;
+    background: var(--surface-bg);
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.18);
     touch-action: none;
   }
 

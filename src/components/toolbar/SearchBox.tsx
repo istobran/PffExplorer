@@ -49,7 +49,7 @@ const searchBoxClass = css`
   flex-shrink: 0;
 
   input {
-    background: #030803;
+    background: var(--field-bg);
     border: 1px solid var(--border-hi);
     color: var(--green);
     font-size: 12px;

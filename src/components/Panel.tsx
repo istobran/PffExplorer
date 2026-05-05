@@ -35,7 +35,7 @@ const panelClass = css`
     display: flex;
     align-items: center;
     height: 26px;
-    background: #030a03;
+    background: var(--panel-header-bg);
     border-bottom: 1px solid var(--border-hi);
     padding: 0 10px;
     flex-shrink: 0;

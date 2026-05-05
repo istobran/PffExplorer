@@ -67,6 +67,7 @@ import type {
 } from "@/types";
 import { css } from "@emotion/css";
 import "@/assets/styles/global.css";
+import appBackgroundUrl from "@/assets/images/background.jpg";
 
 const EMPTY_SNAPSHOT: WorkspaceSnapshot = {
   archives: [],
@@ -1166,7 +1167,8 @@ const appShellClass = css`
   flex-direction: column;
   width: 100vw;
   height: 100vh;
-  background: var(--bg);
+  overflow: hidden;
+  background: var(--bg) url(${appBackgroundUrl}) center / cover no-repeat;
   color: var(--green);
 `;
 
@@ -1285,7 +1287,7 @@ const df1HorizontalWipeClass = css`
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  background: var(--panel-bg);
+  background: transparent;
   contain: paint;
 
   .df1-wipe-content {

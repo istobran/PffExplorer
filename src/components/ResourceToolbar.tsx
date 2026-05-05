@@ -64,7 +64,7 @@ const toolbarClass = css`
   padding: 0 10px;
   gap: 8px;
   flex-shrink: 0;
-  background: #040b04;
+  background: var(--toolbar-bg);
   overflow: visible;
   position: relative;
   z-index: 20;

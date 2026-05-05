@@ -84,6 +84,8 @@ const packageTreeClass = css`
   flex: 1;
   overflow-y: auto;
   padding: 4px 0;
+  background: var(--surface-bg);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.18);
   outline: none;
 
   &:focus-visible {

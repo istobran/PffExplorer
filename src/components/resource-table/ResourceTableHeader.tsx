@@ -77,7 +77,7 @@ const resourceTableHeaderClass = css`
   display: grid;
   grid-template-columns: ${RESOURCE_TABLE_COLUMNS};
   height: 24px;
-  background: #030a03;
+  background: var(--panel-header-bg);
   border-bottom: 2px solid var(--border-hi);
   flex-shrink: 0;
 

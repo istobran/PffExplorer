@@ -84,7 +84,7 @@ const titleBarClass = css`
   align-items: center;
   height: 42px;
   flex-shrink: 0;
-  background: #030803;
+  background: var(--bar-bg);
   border-bottom: 2px solid var(--border-hi);
   padding: 0 12px;
   gap: 8px;

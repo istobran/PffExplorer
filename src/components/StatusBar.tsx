@@ -53,7 +53,7 @@ const statusBarClass = css`
   align-items: center;
   height: 26px;
   flex-shrink: 0;
-  background: #030803;
+  background: var(--bar-bg);
   border-top: 2px solid var(--border-hi);
   padding: 0 12px;
   gap: 0;

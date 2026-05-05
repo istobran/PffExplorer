@@ -169,7 +169,7 @@ const formatFilterDropdownClass = css`
     min-width: 150px;
     max-height: 280px;
     overflow-y: auto;
-    background: #040d04;
+    background: var(--field-bg);
     border: 1px solid var(--border-hi);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
   }

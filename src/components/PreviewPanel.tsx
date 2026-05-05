@@ -271,7 +271,7 @@ const imagePreviewModeToggleClass = css`
   align-items: center;
   flex-shrink: 0;
   border: 1px solid var(--border-hi);
-  background: #061206;
+  background: var(--preview-control-bg);
   height: 18px;
 
   button {
