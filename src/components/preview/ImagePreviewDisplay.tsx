@@ -1,7 +1,7 @@
 import { css } from "@emotion/css";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ImagePreview } from "@/types";
 import { useI18n } from "@/lib/i18n";
 import { playImageReveal } from "@/lib/sounds";
@@ -12,6 +12,7 @@ const RADAR_LOOP_STEP_DELAY_MS = 72;
 const RADAR_LOOP_SWEEP_MS = 640;
 const RADAR_REVEAL_STEP_DELAY_MS = 20;
 const RADAR_REVEAL_BOX_ANIMATION_MS = 160;
+const DEFAULT_MAX_ZOOM_SCALE = 8;
 const RADAR_REVEAL_MS =
   (RADAR_STEPS - 1) * RADAR_REVEAL_STEP_DELAY_MS + RADAR_REVEAL_BOX_ANIMATION_MS + 20;
 
@@ -139,18 +140,28 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
     contentSize: frameLayout.size,
     viewportSize: containerSize,
     resetKey: props.animationKey,
+    maxScale: imageMaxZoomScale(frameLayout.size, containerSize),
   });
+  const setContainerElement = useCallback(
+    (element: HTMLDivElement | null) => {
+      containerRef.current = element;
+      panZoom.surfaceRef(element);
+    },
+    [panZoom.surfaceRef],
+  );
 
   return (
-    <div ref={containerRef} className={imagePreviewDisplayClass}>
+    <div
+      ref={setContainerElement}
+      className={imagePreviewDisplayClass}
+      data-panzoom-surface={imageVisible ? "true" : undefined}
+      onDragStart={(event) => event.preventDefault()}
+      {...panZoom.handlers}
+    >
       <div
         key={props.animationKey}
         className={clsx("image-frame", panZoom.zoomed && "zoomed", panZoom.dragging && "dragging")}
         style={frameLayout.style}
-        ref={panZoom.surfaceRef}
-        data-panzoom-surface={imageVisible ? "true" : undefined}
-        onDragStart={(event) => event.preventDefault()}
-        {...panZoom.handlers}
       >
         {loading && <RadarLoader mode="loop" />}
         {revealing && <RadarLoader key={`${props.animationKey}-reveal`} mode="reveal" />}
@@ -166,6 +177,26 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
         {loadFailed && <div className="image-load-error">{t("preview.imageFailed")}</div>}
       </div>
     </div>
+  );
+}
+
+function imageMaxZoomScale(
+  contentSize: { width: number; height: number },
+  viewportSize: { width: number; height: number },
+) {
+  if (
+    contentSize.width <= 0 ||
+    contentSize.height <= 0 ||
+    viewportSize.width <= 0 ||
+    viewportSize.height <= 0
+  ) {
+    return DEFAULT_MAX_ZOOM_SCALE;
+  }
+
+  return Math.max(
+    DEFAULT_MAX_ZOOM_SCALE,
+    viewportSize.width / contentSize.width,
+    viewportSize.height / contentSize.height,
   );
 }
 
@@ -243,6 +274,7 @@ const imagePreviewDisplayClass = css`
   justify-content: center;
   position: relative;
   overflow: hidden;
+  touch-action: none;
 
   .image-frame {
     max-width: 100%;
@@ -250,7 +282,6 @@ const imagePreviewDisplayClass = css`
     flex-shrink: 0;
     position: relative;
     overflow: visible;
-    touch-action: none;
   }
 
   .loading-frame {

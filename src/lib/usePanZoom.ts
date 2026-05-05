@@ -185,9 +185,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
       return;
     }
 
-    const viewport = event.currentTarget.parentElement?.getBoundingClientRect();
-    if (!viewport) return;
-
+    const viewport = event.currentTarget.getBoundingClientRect();
     const pointer = {
       x: event.clientX - viewport.left,
       y: event.clientY - viewport.top,
@@ -316,7 +314,7 @@ function zoomStateAtPoint(
 }
 
 function gesturePoint(event: WebKitGestureEvent, surface: HTMLElement, viewportSize: Size) {
-  const viewport = surface.parentElement?.getBoundingClientRect();
+  const viewport = surface.getBoundingClientRect();
   if (
     viewport &&
     Number.isFinite(event.clientX) &&
