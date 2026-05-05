@@ -29,6 +29,7 @@ const NON_TEXT_INPUT_TYPES = new Set([
 
 export function shouldBlockWebViewShortcut(event: KeyboardEvent) {
   if (event.isComposing) return false;
+  if (isNativeWindowShortcut(event)) return false;
   if (isAppKeyboardShortcut(event)) return false;
 
   const key = normalizedKey(event);
@@ -102,6 +103,33 @@ function isAppKeyboardShortcut(event: KeyboardEvent) {
   );
 }
 
+function isNativeWindowShortcut(event: KeyboardEvent) {
+  const key = normalizedKey(event);
+
+  if (event.altKey && !event.ctrlKey && !event.metaKey) {
+    return key === "f4" || isSpaceKey(event);
+  }
+
+  if (isApplePlatform() && event.metaKey && !event.altKey) {
+    if (!event.ctrlKey && !event.shiftKey) {
+      return key === "w" || key === "m" || key === "q";
+    }
+
+    return event.ctrlKey && !event.shiftKey && key === "f";
+  }
+
+  if (!isApplePlatform() && event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+    return (
+      key === "arrowup" ||
+      key === "arrowdown" ||
+      key === "arrowleft" ||
+      key === "arrowright"
+    );
+  }
+
+  return false;
+}
+
 function isTextEditingShortcut(event: KeyboardEvent) {
   if (event.altKey) return false;
 
@@ -109,8 +137,17 @@ function isTextEditingShortcut(event: KeyboardEvent) {
   return TEXT_EDITING_SHORTCUT_KEYS.has(key);
 }
 
+function isSpaceKey(event: KeyboardEvent) {
+  return event.code === "Space" || event.key === " " || normalizedKey(event) === "spacebar";
+}
+
 function isFunctionKey(key: string) {
   return /^f(?:[1-9]|1[0-2])$/.test(key);
+}
+
+function isApplePlatform() {
+  if (typeof navigator === "undefined") return false;
+  return /mac|iphone|ipad|ipod/i.test(navigator.platform);
 }
 
 function normalizedKey(event: KeyboardEvent) {
