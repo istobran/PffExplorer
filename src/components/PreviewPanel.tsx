@@ -16,6 +16,7 @@ import { PreviewEmptyState } from "@/components/preview/PreviewEmptyState";
 import { PreviewMeta } from "@/components/preview/PreviewMeta";
 import { PreviewTextBlock, PreviewTextLoading } from "@/components/preview/PreviewTextBlock";
 import { useI18n } from "@/lib/i18n";
+import { isPlainAppShortcut } from "@/lib/shortcutPolicy";
 import {
   playMissionBriefingSelect,
   playUiHover,
@@ -43,9 +44,7 @@ export function PreviewPanel(props: PreviewPanelProps) {
     if (!imagePreviewActive) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key.toLowerCase() !== "n") return;
-      if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (isEditableShortcutTarget(event.target)) return;
+      if (!isPlainAppShortcut(event, ["n"])) return;
 
       event.preventDefault();
       playMissionBriefingSelect();
@@ -205,18 +204,6 @@ function isPreviewableAudioName(name: string) {
 function matchesExtension(name: string, ...extensions: string[]) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   return extensions.includes(ext);
-}
-
-function isEditableShortcutTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-
-  const tagName = target.tagName.toLowerCase();
-  return (
-    target.isContentEditable ||
-    tagName === "input" ||
-    tagName === "textarea" ||
-    tagName === "select"
-  );
 }
 
 type ImagePreviewModeToggleProps = {

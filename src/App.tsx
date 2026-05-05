@@ -50,6 +50,12 @@ import {
   setSoundMuted,
   startDf1MenuMusic,
 } from "@/lib/sounds";
+import {
+  isPlainAppShortcut,
+  isSelectAllResourcesShortcut,
+  shouldBlockWebViewShortcut,
+  shouldBlockWebViewZoomShortcut,
+} from "@/lib/shortcutPolicy";
 import type {
   AppConfig,
   ExportResult,
@@ -181,8 +187,32 @@ function App() {
   );
 
   useEffect(() => {
+    function handleGlobalBrowserShortcuts(event: globalThis.KeyboardEvent) {
+      if (!shouldBlockWebViewShortcut(event)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    function handleGlobalBrowserZoom(event: WheelEvent) {
+      if (!shouldBlockWebViewZoomShortcut(event)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    window.addEventListener("keydown", handleGlobalBrowserShortcuts, true);
+    window.addEventListener("wheel", handleGlobalBrowserZoom, { capture: true, passive: false });
+
+    return () => {
+      window.removeEventListener("keydown", handleGlobalBrowserShortcuts, true);
+      window.removeEventListener("wheel", handleGlobalBrowserZoom, true);
+    };
+  }, []);
+
+  useEffect(() => {
     function handleGlobalSelectAll(event: globalThis.KeyboardEvent) {
-      if (!isSelectAllShortcut(event)) return;
+      if (!isSelectAllResourcesShortcut(event)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -197,10 +227,9 @@ function App() {
 
   useEffect(() => {
     function handleGlobalTitleBarShortcuts(event: globalThis.KeyboardEvent) {
-      if (!isPlainKeyShortcut(event) || isEditableShortcutTarget(event.target)) return;
+      if (!isPlainAppShortcut(event, ["b", "m", "l"])) return;
 
       const key = event.key.toLowerCase();
-      if (key !== "b" && key !== "m" && key !== "l") return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -960,37 +989,6 @@ function fitWindowToCursorWorkAreaFromTitle(event: MouseEvent<HTMLElement>) {
   window.setTimeout(() => {
     void fitWindowToCursorWorkArea();
   }, 0);
-}
-
-function isSelectAllShortcut(event: globalThis.KeyboardEvent) {
-  return (
-    !event.isComposing &&
-    !event.altKey &&
-    (event.ctrlKey || event.metaKey) &&
-    event.key.toLowerCase() === "a"
-  );
-}
-
-function isPlainKeyShortcut(event: globalThis.KeyboardEvent) {
-  return (
-    !event.repeat &&
-    !event.isComposing &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey
-  );
-}
-
-function isEditableShortcutTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-
-  const tagName = target.tagName.toLowerCase();
-  return (
-    target.isContentEditable ||
-    tagName === "input" ||
-    tagName === "textarea" ||
-    tagName === "select"
-  );
 }
 
 async function runWindowAction(action: () => Promise<void>) {

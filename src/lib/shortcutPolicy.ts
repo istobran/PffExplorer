@@ -1,0 +1,118 @@
+const TEXT_EDITING_SHORTCUT_KEYS = new Set([
+  "c",
+  "v",
+  "x",
+  "z",
+  "y",
+  "arrowleft",
+  "arrowright",
+  "arrowup",
+  "arrowdown",
+  "backspace",
+  "delete",
+  "home",
+  "end",
+]);
+
+const NON_TEXT_INPUT_TYPES = new Set([
+  "button",
+  "checkbox",
+  "color",
+  "file",
+  "hidden",
+  "image",
+  "radio",
+  "range",
+  "reset",
+  "submit",
+]);
+
+export function shouldBlockWebViewShortcut(event: KeyboardEvent) {
+  if (event.isComposing) return false;
+  if (isAppKeyboardShortcut(event)) return false;
+
+  const key = normalizedKey(event);
+  const editable = isEditableShortcutTarget(event.target);
+
+  if (isFunctionKey(key)) return true;
+  if (key === "backspace" && !editable) return true;
+  if (event.altKey) return !editable;
+
+  if (event.ctrlKey || event.metaKey) {
+    return !editable || !isTextEditingShortcut(event);
+  }
+
+  return false;
+}
+
+export function shouldBlockWebViewZoomShortcut(event: WheelEvent) {
+  return event.ctrlKey || event.metaKey;
+}
+
+export function isSelectAllResourcesShortcut(event: KeyboardEvent) {
+  return (
+    !event.isComposing &&
+    !event.altKey &&
+    (event.ctrlKey || event.metaKey) &&
+    normalizedKey(event) === "a"
+  );
+}
+
+export function isPlainAppShortcut(event: KeyboardEvent, keys: readonly string[]) {
+  return (
+    !event.repeat &&
+    !event.isComposing &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !isEditableShortcutTarget(event.target) &&
+    keys.includes(normalizedKey(event))
+  );
+}
+
+export function isAudioPlaybackShortcut(event: KeyboardEvent) {
+  return (
+    event.code === "Space" &&
+    !event.repeat &&
+    !event.isComposing &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !isEditableShortcutTarget(event.target)
+  );
+}
+
+export function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+
+  if (target instanceof HTMLInputElement) {
+    return !NON_TEXT_INPUT_TYPES.has(target.type);
+  }
+
+  return false;
+}
+
+function isAppKeyboardShortcut(event: KeyboardEvent) {
+  return (
+    isSelectAllResourcesShortcut(event) ||
+    isPlainAppShortcut(event, ["b", "m", "l", "n"]) ||
+    isAudioPlaybackShortcut(event)
+  );
+}
+
+function isTextEditingShortcut(event: KeyboardEvent) {
+  if (event.altKey) return false;
+
+  const key = normalizedKey(event);
+  return TEXT_EDITING_SHORTCUT_KEYS.has(key);
+}
+
+function isFunctionKey(key: string) {
+  return /^f(?:[1-9]|1[0-2])$/.test(key);
+}
+
+function normalizedKey(event: KeyboardEvent) {
+  return event.key.toLowerCase();
+}

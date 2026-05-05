@@ -4,6 +4,7 @@ import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-rea
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
 import { useI18n } from "@/lib/i18n";
+import { isAudioPlaybackShortcut } from "@/lib/shortcutPolicy";
 import { playUiHover, playUiPress } from "@/lib/sounds";
 
 const AUDIO_BAR_COUNT = 18;
@@ -95,13 +96,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (
-        event.code !== "Space" ||
-        event.repeat ||
-        isEditableKeyboardTarget(event.target)
-      ) {
-        return;
-      }
+      if (!isAudioPlaybackShortcut(event)) return;
 
       event.preventDefault();
       togglePlayback();
@@ -517,18 +512,6 @@ function audioBarsFromFrequencyData(data: Uint8Array, barCount: number) {
 
     return Math.max(18, Math.min(96, 18 + shapedEnergy * 78));
   });
-}
-
-function isEditableKeyboardTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
-
-  if (target instanceof HTMLInputElement) {
-    return !["button", "checkbox", "radio", "range", "reset", "submit"].includes(target.type);
-  }
-
-  return false;
 }
 
 const audioPreviewDisplayClass = css`
