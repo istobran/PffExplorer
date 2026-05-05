@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import type { ImagePreview } from "@/types";
 import { useI18n } from "@/lib/i18n";
 import { playImageReveal } from "@/lib/sounds";
+import { usePanZoom } from "@/lib/usePanZoom";
 
 const RADAR_STEPS = 8;
 const RADAR_LOOP_STEP_DELAY_MS = 72;
@@ -129,17 +130,23 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
   const loading = !decodedSrc && !loadFailed;
   const revealing = Boolean(decodedSrc && !loadFailed && !revealDone);
   const imageVisible = Boolean(decodedSrc && !loadFailed && revealDone);
-  const frameStyle = useMemo(
-    () => imageFrameStyle(props.image.width, props.image.height, containerSize),
+  const frameLayout = useMemo(
+    () => imageFrameLayout(props.image.width, props.image.height, containerSize),
     [containerSize, props.image.height, props.image.width],
   );
+  const panZoom = usePanZoom({
+    enabled: imageVisible,
+    size: frameLayout.size,
+    resetKey: props.animationKey,
+  });
 
   return (
     <div ref={containerRef} className={imagePreviewDisplayClass}>
       <div
         key={props.animationKey}
-        className="image-frame"
-        style={frameStyle}
+        className={clsx("image-frame", panZoom.zoomed && "zoomed", panZoom.dragging && "dragging")}
+        style={frameLayout.style}
+        {...panZoom.handlers}
       >
         {loading && <RadarLoader mode="loop" />}
         {revealing && <RadarLoader key={`${props.animationKey}-reveal`} mode="reveal" />}
@@ -148,6 +155,7 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
             className={clsx(imageVisible && "revealed", props.nightVision && "night-vision")}
             src={decodedSrc}
             alt={props.name}
+            style={panZoom.transformStyle}
           />
         )}
         {loadFailed && <div className="image-load-error">{t("preview.imageFailed")}</div>}
@@ -156,7 +164,7 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
   );
 }
 
-function imageFrameStyle(
+function imageFrameLayout(
   imageWidth: number,
   imageHeight: number,
   containerSize: { width: number; height: number },
@@ -167,9 +175,12 @@ function imageFrameStyle(
 
   if (containerSize.width <= 0 || containerSize.height <= 0) {
     return {
-      width: "100%",
-      aspectRatio: `${safeImageWidth} / ${safeImageHeight}`,
-    } satisfies CSSProperties;
+      style: {
+        width: "100%",
+        aspectRatio: `${safeImageWidth} / ${safeImageHeight}`,
+      } satisfies CSSProperties,
+      size: { width: 0, height: 0 },
+    };
   }
 
   const containerAspect = containerSize.width / containerSize.height;
@@ -179,10 +190,16 @@ function imageFrameStyle(
     imageAspect >= containerAspect ? containerSize.width / imageAspect : containerSize.height;
 
   return {
-    width: `${Math.floor(width)}px`,
-    height: `${Math.floor(height)}px`,
-    aspectRatio: `${safeImageWidth} / ${safeImageHeight}`,
-  } satisfies CSSProperties;
+    style: {
+      width: `${Math.floor(width)}px`,
+      height: `${Math.floor(height)}px`,
+      aspectRatio: `${safeImageWidth} / ${safeImageHeight}`,
+    } satisfies CSSProperties,
+    size: {
+      width: Math.floor(width),
+      height: Math.floor(height),
+    },
+  };
 }
 
 type RadarLoaderProps = {
@@ -228,6 +245,7 @@ const imagePreviewDisplayClass = css`
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
+    touch-action: none;
   }
 
   .loading-frame {
@@ -282,6 +300,8 @@ const imagePreviewDisplayClass = css`
     position: relative;
     z-index: 1;
     image-rendering: pixelated;
+    transform-origin: center center;
+    will-change: transform;
   }
 
   img.revealed {
