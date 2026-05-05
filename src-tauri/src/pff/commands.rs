@@ -74,6 +74,19 @@ pub async fn preview_entry(
 }
 
 #[tauri::command]
+pub fn get_audio_preview_bytes(
+    app: tauri::AppHandle,
+    token: String,
+) -> Result<tauri::ipc::Response, String> {
+    let audio_cache = app.state::<AudioPreviewCache>();
+    let bytes = audio_cache
+        .bytes(&token)
+        .ok_or_else(|| "audio preview expired".to_string())?;
+
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+#[tauri::command]
 pub fn export_entry(request: ExportRequest) -> Result<ExportResult, String> {
     let archive = PffArchive::open(&request.archive_path).map_err(command_error)?;
     let entry = archive

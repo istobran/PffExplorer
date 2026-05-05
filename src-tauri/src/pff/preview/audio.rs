@@ -39,8 +39,8 @@ pub(super) fn audio_preview_from_bytes(
     let playback_data = write_pcm_wav(decoded.sample_rate, decoded.channels, 16, &decoded.pcm);
     let mime_type = "audio/wav";
 
-    let (data_url, preview_url) = if let Some(cache) = audio_cache {
-        (None, Some(cache.store(cache_key, mime_type, playback_data)))
+    let (data_url, audio_token) = if let Some(cache) = audio_cache {
+        (None, Some(cache.store(cache_key, playback_data)))
     } else {
         (Some(audio_data_url(mime_type, &playback_data)), None)
     };
@@ -49,7 +49,7 @@ pub(super) fn audio_preview_from_bytes(
         preview: AudioPreview {
             data_url,
             file_path: None,
-            preview_url,
+            audio_token,
             format: decoded.format,
             mime_type: mime_type.to_string(),
             codec: decoded.codec,

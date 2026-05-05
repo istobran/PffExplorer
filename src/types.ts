@@ -64,7 +64,7 @@ export type ImagePreview = {
 export type AudioPreview = {
   dataUrl: string | null;
   filePath: string | null;
-  previewUrl: string | null;
+  audioToken: string | null;
   format: string;
   mimeType: string;
   codec: string;

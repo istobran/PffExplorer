@@ -1,5 +1,5 @@
 import { css } from "@emotion/css";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { AudioLines, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AudioPreview } from "@/types";
@@ -26,6 +26,10 @@ export type AudioPreviewDisplayProps = {
   animationKey: string;
 };
 
+type AudioSource =
+  | { kind: "token"; token: string }
+  | { kind: "url"; url: string };
+
 export function AudioPreviewLoadingBox() {
   const { t } = useI18n();
 
@@ -50,12 +54,12 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const pausedRef = useRef(true);
   const currentTimeRef = useRef(0);
   const durationRef = useRef(props.audio.durationSeconds ?? 0);
-  const audioSrc = useMemo(() => {
-    if (props.audio.previewUrl) return props.audio.previewUrl;
-    if (props.audio.dataUrl) return props.audio.dataUrl;
-    if (props.audio.filePath) return convertFileSrc(props.audio.filePath);
+  const audioSource = useMemo<AudioSource | null>(() => {
+    if (props.audio.audioToken) return { kind: "token", token: props.audio.audioToken };
+    if (props.audio.dataUrl) return { kind: "url", url: props.audio.dataUrl };
+    if (props.audio.filePath) return { kind: "url", url: convertFileSrc(props.audio.filePath) };
     return null;
-  }, [props.audio.dataUrl, props.audio.filePath, props.audio.previewUrl]);
+  }, [props.audio.audioToken, props.audio.dataUrl, props.audio.filePath]);
   const [paused, setPaused] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(props.audio.durationSeconds ?? 0);
@@ -64,7 +68,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
   const [barHeights, setBarHeights] = useState(IDLE_AUDIO_BAR_HEIGHTS);
 
   useEffect(() => {
-    if (!audioSrc) return;
+    if (!audioSource) return;
 
     const requestId = nextPlaybackRequest();
     stopPlayback({ resetOffset: true });
@@ -75,14 +79,14 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     setLoadFailed(false);
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
 
-    void loadAndPlayAudio(audioSrc, requestId);
+    void loadAndPlayAudio(audioSource, requestId);
 
     return () => {
       playbackRequestRef.current += 1;
       stopPlayback({ resetOffset: true });
       audioBufferRef.current = null;
     };
-  }, [audioSrc, props.animationKey, props.audio.durationSeconds]);
+  }, [audioSource, props.animationKey, props.audio.durationSeconds]);
 
   useEffect(() => {
     volumeRef.current = volume;
@@ -182,7 +186,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     setBarHeights(IDLE_AUDIO_BAR_HEIGHTS);
   }
 
-  async function loadAndPlayAudio(source: string, requestId: number) {
+  async function loadAndPlayAudio(source: AudioSource, requestId: number) {
     const context = getPreviewAudioContext();
     if (!context) {
       setLoadFailed(true);
@@ -190,8 +194,7 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
     }
 
     try {
-      const response = await fetch(source);
-      const encodedAudio = await response.arrayBuffer();
+      const encodedAudio = await loadAudioBytes(source);
       const audioBuffer = await context.decodeAudioData(encodedAudio.slice(0));
       if (!isActivePlaybackRequest(requestId)) return;
 
@@ -443,6 +446,33 @@ export function AudioPreviewDisplay(props: AudioPreviewDisplayProps) {
       </div>
     </div>
   );
+}
+
+type AudioByteResponse = ArrayBuffer | Uint8Array | number[];
+
+async function loadAudioBytes(source: AudioSource) {
+  if (source.kind === "token") {
+    const bytes = await invoke<AudioByteResponse>("get_audio_preview_bytes", {
+      token: source.token,
+    });
+    return audioBytesToArrayBuffer(bytes);
+  }
+
+  const response = await fetch(source.url);
+  if (!response.ok) {
+    throw new Error(`Audio preview request failed: ${response.status}`);
+  }
+  return response.arrayBuffer();
+}
+
+function audioBytesToArrayBuffer(bytes: AudioByteResponse) {
+  if (bytes instanceof ArrayBuffer) return bytes;
+
+  if (bytes instanceof Uint8Array) {
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  }
+
+  return new Uint8Array(bytes).buffer;
 }
 
 function formatAudioTime(value: number) {
