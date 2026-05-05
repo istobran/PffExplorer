@@ -1,7 +1,7 @@
 import { css } from "@emotion/css";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import clsx from "clsx";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ImagePreview } from "@/types";
 import { useI18n } from "@/lib/i18n";
 import { playImageReveal } from "@/lib/sounds";
@@ -33,13 +33,37 @@ export function ImagePreviewLoadingBox() {
 
 export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
   const { t } = useI18n();
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const imageSrc = useMemo(() => {
     if (props.image.filePath) return convertFileSrc(props.image.filePath);
     return props.image.dataUrl;
   }, [props.image.dataUrl, props.image.filePath]);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [decodedSrc, setDecodedSrc] = useState<string | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [revealDone, setRevealDone] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    function updateSize(element: HTMLDivElement) {
+      const rect = element.getBoundingClientRect();
+      setContainerSize({
+        width: Math.max(0, rect.width),
+        height: Math.max(0, rect.height),
+      });
+    }
+
+    updateSize(container);
+
+    const observer = new ResizeObserver(() => updateSize(container));
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,15 +129,17 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
   const loading = !decodedSrc && !loadFailed;
   const revealing = Boolean(decodedSrc && !loadFailed && !revealDone);
   const imageVisible = Boolean(decodedSrc && !loadFailed && revealDone);
+  const frameStyle = useMemo(
+    () => imageFrameStyle(props.image.width, props.image.height, containerSize),
+    [containerSize, props.image.height, props.image.width],
+  );
 
   return (
-    <div className={imagePreviewDisplayClass}>
+    <div ref={containerRef} className={imagePreviewDisplayClass}>
       <div
         key={props.animationKey}
         className="image-frame"
-        style={{
-          aspectRatio: `${props.image.width} / ${props.image.height}`,
-        }}
+        style={frameStyle}
       >
         {loading && <RadarLoader mode="loop" />}
         {revealing && <RadarLoader key={`${props.animationKey}-reveal`} mode="reveal" />}
@@ -128,6 +154,35 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
       </div>
     </div>
   );
+}
+
+function imageFrameStyle(
+  imageWidth: number,
+  imageHeight: number,
+  containerSize: { width: number; height: number },
+) {
+  const safeImageWidth = Math.max(1, imageWidth);
+  const safeImageHeight = Math.max(1, imageHeight);
+  const imageAspect = safeImageWidth / safeImageHeight;
+
+  if (containerSize.width <= 0 || containerSize.height <= 0) {
+    return {
+      width: "100%",
+      aspectRatio: `${safeImageWidth} / ${safeImageHeight}`,
+    } satisfies CSSProperties;
+  }
+
+  const containerAspect = containerSize.width / containerSize.height;
+  const width =
+    imageAspect >= containerAspect ? containerSize.width : containerSize.height * imageAspect;
+  const height =
+    imageAspect >= containerAspect ? containerSize.width / imageAspect : containerSize.height;
+
+  return {
+    width: `${Math.floor(width)}px`,
+    height: `${Math.floor(height)}px`,
+    aspectRatio: `${safeImageWidth} / ${safeImageHeight}`,
+  } satisfies CSSProperties;
 }
 
 type RadarLoaderProps = {
@@ -168,9 +223,9 @@ const imagePreviewDisplayClass = css`
   overflow: hidden;
 
   .image-frame {
-    width: 100%;
     max-width: 100%;
     max-height: 100%;
+    flex-shrink: 0;
     position: relative;
     overflow: hidden;
   }
