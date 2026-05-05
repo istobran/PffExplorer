@@ -136,7 +136,8 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
   );
   const panZoom = usePanZoom({
     enabled: imageVisible,
-    size: frameLayout.size,
+    contentSize: frameLayout.size,
+    viewportSize: containerSize,
     resetKey: props.animationKey,
   });
 
@@ -146,6 +147,9 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
         key={props.animationKey}
         className={clsx("image-frame", panZoom.zoomed && "zoomed", panZoom.dragging && "dragging")}
         style={frameLayout.style}
+        ref={panZoom.surfaceRef}
+        data-panzoom-surface={imageVisible ? "true" : undefined}
+        onDragStart={(event) => event.preventDefault()}
         {...panZoom.handlers}
       >
         {loading && <RadarLoader mode="loop" />}
@@ -156,6 +160,7 @@ export function ImagePreviewDisplay(props: ImagePreviewDisplayProps) {
             src={decodedSrc}
             alt={props.name}
             style={panZoom.transformStyle}
+            draggable={false}
           />
         )}
         {loadFailed && <div className="image-load-error">{t("preview.imageFailed")}</div>}
@@ -244,7 +249,7 @@ const imagePreviewDisplayClass = css`
     max-height: 100%;
     flex-shrink: 0;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     touch-action: none;
   }
 
@@ -302,6 +307,7 @@ const imagePreviewDisplayClass = css`
     image-rendering: pixelated;
     transform-origin: center center;
     will-change: transform;
+    -webkit-user-drag: none;
   }
 
   img.revealed {

@@ -47,7 +47,7 @@ export function shouldBlockWebViewShortcut(event: KeyboardEvent) {
 }
 
 export function shouldBlockWebViewZoomShortcut(event: WheelEvent) {
-  return event.ctrlKey || event.metaKey;
+  return (event.ctrlKey || event.metaKey) && !isPanZoomShortcutTarget(event.target);
 }
 
 export function isSelectAllResourcesShortcut(event: KeyboardEvent) {
@@ -135,6 +135,10 @@ function isTextEditingShortcut(event: KeyboardEvent) {
 
   const key = normalizedKey(event);
   return TEXT_EDITING_SHORTCUT_KEYS.has(key);
+}
+
+function isPanZoomShortcutTarget(target: EventTarget | null) {
+  return target instanceof Element && target.closest("[data-panzoom-surface='true']") != null;
 }
 
 function isSpaceKey(event: KeyboardEvent) {
