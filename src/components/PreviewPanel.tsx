@@ -1,6 +1,6 @@
 import { css } from "@emotion/css";
 import { FileArchive } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { PreviewResponse, ResourceEntry } from "@/types";
 import { BinaryPreview } from "@/components/preview/BinaryPreview";
 import {
@@ -28,11 +28,14 @@ export type PreviewPanelProps = {
   entry: ResourceEntry | null;
   preview: PreviewResponse | null;
   loading: boolean;
+  nightVision: boolean;
+  onNightVisionChange: (nightVision: boolean) => void;
 };
 
 export function PreviewPanel(props: PreviewPanelProps) {
   const { t } = useI18n();
-  const [nightVision, setNightVision] = useState(true);
+  const nightVision = props.nightVision;
+  const onNightVisionChange = props.onNightVisionChange;
   const imagePreviewActive =
     !props.loading && props.preview?.status === "image" && props.preview.image != null;
   const audioPreviewActive =
@@ -48,7 +51,7 @@ export function PreviewPanel(props: PreviewPanelProps) {
 
       event.preventDefault();
       playMissionBriefingSelect();
-      setNightVision((current) => !current);
+      onNightVisionChange(!nightVision);
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -56,7 +59,7 @@ export function PreviewPanel(props: PreviewPanelProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [imagePreviewActive]);
+  }, [imagePreviewActive, nightVision, onNightVisionChange]);
 
   useEffect(() => {
     if (!audioPreviewActive) return;
@@ -124,7 +127,10 @@ export function PreviewPanel(props: PreviewPanelProps) {
       <PreviewBody compact>
         <div className={imagePreviewHeaderClass}>
           <PreviewMeta entry={props.entry} preview={props.preview} />
-          <ImagePreviewModeToggle value={nightVision} onChange={setNightVision} />
+          <ImagePreviewModeToggle
+            value={nightVision}
+            onChange={onNightVisionChange}
+          />
         </div>
         <ImagePreviewDisplay
           image={props.preview.image}

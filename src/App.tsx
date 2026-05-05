@@ -115,6 +115,7 @@ function App() {
     useState<ConfirmDialogState | null>(null);
   const [resourceFilesSlideKey, setResourceFilesSlideKey] = useState(0);
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [imagePreviewNightVision, setImagePreviewNightVision] = useState(true);
   const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
   const [backgroundMusicEnabled, setBackgroundMusicEnabledState] = useState(() =>
     isBackgroundMusicEnabled(),
@@ -367,6 +368,7 @@ function App() {
     try {
       const config = await invoke<AppConfig>("load_app_config");
       setLocale(isLocale(config.locale) ? config.locale : DEFAULT_LOCALE);
+      setImagePreviewNightVision(config.imagePreviewNightVision ?? true);
 
       const paths = uniquePaths(config.openedPffPaths ?? []);
       if (paths.length === 0) return;
@@ -461,10 +463,15 @@ function App() {
     }
   }
 
-  async function persistOpenedPffPaths(paths: string[], nextLocale = locale) {
+  async function persistOpenedPffPaths(
+    paths: string[],
+    nextLocale = locale,
+    nextImagePreviewNightVision = imagePreviewNightVision,
+  ) {
     const config: AppConfig = {
       openedPffPaths: uniquePaths(paths),
       locale: nextLocale,
+      imagePreviewNightVision: nextImagePreviewNightVision,
     };
 
     try {
@@ -859,6 +866,11 @@ function App() {
     void persistOpenedPffPaths(openedArchivePaths(), nextLocale);
   }
 
+  function changeImagePreviewNightVision(nextNightVision: boolean) {
+    setImagePreviewNightVision(nextNightVision);
+    void persistOpenedPffPaths(openedArchivePaths(), locale, nextNightVision);
+  }
+
   function showConfirmDialog(options: Omit<ConfirmDialogState, "closing" | "resolve">) {
     return new Promise<boolean>((resolve) => {
       setConfirmDialogState({ ...options, closing: false, resolve });
@@ -947,7 +959,13 @@ function App() {
 
             {selectedEntry && (
               <Panel id="preview-panel" title={t("panel.preview")} sub={selectedEntry.name}>
-                <PreviewPanel entry={selectedEntry} preview={preview} loading={previewLoading} />
+                <PreviewPanel
+                  entry={selectedEntry}
+                  preview={preview}
+                  loading={previewLoading}
+                  nightVision={imagePreviewNightVision}
+                  onNightVisionChange={changeImagePreviewNightVision}
+                />
               </Panel>
             )}
           </div>
