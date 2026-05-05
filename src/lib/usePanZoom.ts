@@ -169,6 +169,22 @@ export function usePanZoom(options: UsePanZoomOptions) {
     event.preventDefault();
     event.stopPropagation();
 
+    if (isWheelPanGesture(event)) {
+      updateState((current) =>
+        clampState(
+          {
+            scale: current.scale,
+            x: current.x - event.deltaX,
+            y: current.y - event.deltaY,
+          },
+          options.contentSize,
+          options.viewportSize,
+          minScale,
+        ),
+      );
+      return;
+    }
+
     const viewport = event.currentTarget.parentElement?.getBoundingClientRect();
     if (!viewport) return;
 
@@ -349,6 +365,15 @@ function hasPanRange(contentSize: Size, viewportSize: Size, scale: number) {
     panRange(contentSize.width, viewportSize.width, scale) > RESET_EPSILON ||
     panRange(contentSize.height, viewportSize.height, scale) > RESET_EPSILON
   );
+}
+
+function isWheelPanGesture(event: WheelEvent<HTMLElement>) {
+  return isApplePlatform() && !event.ctrlKey && !event.metaKey;
+}
+
+function isApplePlatform() {
+  if (typeof navigator === "undefined") return false;
+  return /mac|iphone|ipad|ipod/i.test(navigator.platform);
 }
 
 function panRange(contentLength: number, viewportLength: number, scale: number) {
