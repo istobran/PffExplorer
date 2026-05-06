@@ -1,5 +1,6 @@
 mod config;
 mod pff;
+mod window;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,7 +17,8 @@ pub fn run() {
             pff::commands::scan_pff_project,
             pff::commands::preview_entry,
             pff::commands::get_audio_preview_bytes,
-            pff::commands::export_entry
+            pff::commands::export_entry,
+            window::fit_window_to_work_area
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

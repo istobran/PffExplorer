@@ -1064,8 +1064,21 @@ async function fitWindowToMonitorWorkArea(monitor: Monitor) {
     console.error("Window unmaximize failed", error);
   }
 
+  if (isWindowsWebView()) {
+    try {
+      const handled = await invoke<boolean>("fit_window_to_work_area");
+      if (handled) return;
+    } catch (error) {
+      console.error("Native window sizing failed", error);
+    }
+  }
+
   await appWindow.setPosition(new PhysicalPosition(workArea.position.x, workArea.position.y));
   await appWindow.setSize(new PhysicalSize(workArea.size.width, workArea.size.height));
+}
+
+function isWindowsWebView() {
+  return typeof navigator !== "undefined" && /\bWindows\b/i.test(navigator.userAgent);
 }
 
 function singlePath(value: string | string[] | null): string | null {
