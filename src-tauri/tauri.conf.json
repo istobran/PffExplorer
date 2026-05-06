@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "pff资源查看器",
-  "version": "0.1.0",
+  "productName": "PFF资源查看器",
+  "version": "1.0.0",
   "identifier": "me.bangz.pff-explorer",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -33,9 +33,9 @@
     "active": true,
     "targets": "all",
     "publisher": "DF Tieba Group",
-    "copyright": "Copyright © 2026 MonoLight. All rights reserved.",
-    "shortDescription": "pff资源查看器",
-    "longDescription": "三角洲特种部队贴吧群自研pff资源查看器",
+    "copyright": "© 2026 MonoLight, QQ群：74742315",
+    "shortDescription": "PFF资源查看器",
+    "longDescription": "三角洲特种部队贴吧PFF资源查看器 by MonoLight",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

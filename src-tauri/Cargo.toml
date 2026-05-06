@@ -1,7 +1,7 @@
 [package]
 name = "pff-explorer"
-version = "0.1.0"
-description = "三角洲特种部队贴吧群自研pff资源查看器"
+version = "1.0.0"
+description = "三角洲特种部队贴吧PFF资源查看器 by MonoLight"
 authors = ["MonoLight"]
 edition = "2021"
 
